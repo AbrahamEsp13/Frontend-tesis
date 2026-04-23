@@ -41,7 +41,7 @@ function EvaluacionesIA() {
   const cargarHistorial = async () => {
     setCargandoHistorial(true)
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com")
+      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/cuestionarios")
       const resultado = await respuesta.json()
       // Filtramos la lista dependiendo del rol
       if (rol === 'estudiante') {
@@ -65,7 +65,7 @@ function EvaluacionesIA() {
     const formData = new FormData()
     formData.append("archivo", archivo)
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com", { method: "POST", body: formData })
+      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData })
       if (!respuesta.ok) throw new Error("Fallo en el servidor.")
       alert("✅ ¡Cuestionario generado! Ve a tu historial para publicarlo.")
       setArchivo(null)
@@ -78,7 +78,7 @@ function EvaluacionesIA() {
 
   const publicarExamen = async (id) => {
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com${id}/publicar`, { method: 'PUT' })
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, { method: 'PUT' })
       alert("🚀 ¡Examen publicado! Los estudiantes ya pueden verlo.")
       cargarHistorial() // Recargamos la lista para actualizar el estado
     } catch (err) {
@@ -91,7 +91,7 @@ function EvaluacionesIA() {
     if (!window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este examen para siempre?")) return;
 
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com${id}`, { method: 'DELETE' })
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}`, { method: 'DELETE' })
       alert("🗑️ Examen eliminado de la base de datos.");
       cargarHistorial(); // Recargar la lista
     } catch (err) {
@@ -181,7 +181,7 @@ function EvaluacionesIA() {
   const guardarEdicionEnBackend = async () => {
     try {
       // Usamos el ID del examen activo para decirle a FastAPI cuál actualizar
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com${examenActivo.id}`, {
+      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${examenActivo.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         // Enviamos la lista de preguntas ya editada

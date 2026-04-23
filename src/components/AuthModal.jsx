@@ -26,7 +26,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
         try {
             if (isLogin) {
                 // --- LÓGICA DE INICIAR SESIÓN ---
-                const response = await fetch("https://backend-tesis-x187.onrender.com", {
+                const response = await fetch("https://backend-tesis-x187.onrender.com/api/auth/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ correo, password })
@@ -43,7 +43,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
 
             } else {
                 // --- LÓGICA DE REGISTRO ---
-                const response = await fetch("https://backend-tesis-x187.onrender.com", {
+                const response = await fetch("https://backend-tesis-x187.onrender.com/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ nombre, correo, password, rol })
