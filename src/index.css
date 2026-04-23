@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Magia para que la navegación sea suave */
+html {
+    scroll-behavior: smooth;
+    /* Esto evita que la barra de navegación tape el título de la sección al llegar a ella */
+    scroll-padding-top: 6rem;
+}
