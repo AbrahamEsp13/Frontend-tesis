@@ -15,6 +15,7 @@ function EvaluacionesIA() {
   const [archivo, setArchivo] = useState(null)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
+  const [numPreguntas, setNumPreguntas] = useState(5)
 
   // Estados del Examen (Estudiante y Vista Previa Docente)
   const [examenActivo, setExamenActivo] = useState(null)
@@ -79,9 +80,9 @@ function EvaluacionesIA() {
 
     const formData = new FormData()
     formData.append("archivo", archivo)
-    
     // 2. Le mandamos el ID al backend (el nombre debe ser igual al que pusimos en Python: usuario_id)
     formData.append("usuario_id", usuario.id) 
+    formData.append("num_preguntas", numPreguntas)
 
     try {
       const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { 
@@ -331,11 +332,29 @@ function EvaluacionesIA() {
       {vista === 'nuevo' && rol === 'docente' && (
         <div>
           <h2>Panel de Docente</h2>
-          <p>Sube tus apuntes y la IA creará un examen interactivo en estado de Borrador.</p>
-          <div style={{ margin: '20px 0', padding: '20px', border: '2px dashed #ccc', borderRadius: '10px' }}>
-            <input type="file" accept=".pdf" onChange={(e) => setArchivo(e.target.files[0])} style={{ display: 'block', marginBottom: '15px' }} />
-            <button onClick={generarCuestionario} disabled={cargando} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', cursor: cargando ? 'not-allowed' : 'pointer' }}>
-              {cargando ? "⏳ Analizando PDF y generando preguntas..." : "Generar Examen"}
+          <p>Sube tus apuntes, elige cuántas preguntas necesitas y la IA creará un examen interactivo.</p>
+          <div style={{ margin: '20px 0', padding: '20px', border: '2px dashed #ccc', borderRadius: '10px', backgroundColor: '#fdfdfd' }}>
+            
+            {/* NUEVO SELECTOR DE PREGUNTAS */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+                Cantidad de preguntas a generar:
+              </label>
+              <input 
+                type="number" 
+                min="1" 
+                max="15" 
+                value={numPreguntas} 
+                onChange={(e) => setNumPreguntas(e.target.value)} 
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '100px', fontSize: '16px' }}
+              />
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '14px' }}>preguntas (Máximo 15)</span>
+            </div>
+
+            <input type="file" accept=".pdf" onChange={(e) => setArchivo(e.target.files[0])} style={{ display: 'block', marginBottom: '20px' }} />
+            
+            <button onClick={generarCuestionario} disabled={cargando} style={{ padding: '12px 24px', fontSize: '16px', fontWeight: 'bold', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', cursor: cargando ? 'not-allowed' : 'pointer' }}>
+              {cargando ? "⏳ Analizando PDF e IA trabajando..." : "Generar Examen con IA"}
             </button>
           </div>
           {error && <div style={{ color: 'red', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '5px' }}>{error}</div>}
