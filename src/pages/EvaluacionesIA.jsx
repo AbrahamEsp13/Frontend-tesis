@@ -144,7 +144,7 @@ function EvaluacionesIA() {
     return correctas;
   }
 
-  // --- NUEVOS ESTADOS Y FUNCIONES PARA EDITAR (CMS) ---
+  // --- NUEVOS ESTADOS Y FUNCIONES PARA EDITAR ---
   const [modoEdicion, setModoEdicion] = useState(false);
 
   const actualizarPregunta = (index, campo, valor) => {

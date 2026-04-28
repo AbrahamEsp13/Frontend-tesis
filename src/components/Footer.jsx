@@ -18,7 +18,7 @@ const Footer = () => {
                             QuizAI
                         </span>
                         <p className="text-gray-500 text-sm leading-relaxed">
-                            Redefining the boundaries of personalized education through human-centric artificial intelligence.
+                            Redefiniendo los límites de la educación personalizada mediante la inteligencia artificial centrada en el ser humano.
                         </p>
                     </div>
 
@@ -28,7 +28,7 @@ const Footer = () => {
                         {/* Columna 1: PLATFORM */}
                         <div>
                             <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-6">
-                                Platform
+                                Platforma
                             </h4>
                             <ul className="space-y-4">
                                 <li><a href="#features" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">Features</a></li>
@@ -40,7 +40,7 @@ const Footer = () => {
                         {/* Columna 2: COMPANY */}
                         <div>
                             <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-6">
-                                Company
+                                Compañia
                             </h4>
                             <ul className="space-y-4">
                                 <li><a href="#privacy" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">Privacy Policy</a></li>
@@ -71,7 +71,7 @@ const Footer = () => {
 
                     {/* Copyright */}
                     <p className="text-gray-500 text-sm">
-                        © {currentYear} QuizAI. All rights reserved.
+                        © {currentYear} QuizAI. Todos los derechos reservados.
                     </p>
 
                     {/* Selector de Idioma (Visual) */}
@@ -80,7 +80,7 @@ const Footer = () => {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
-                        <span className="text-sm">English (US)</span>
+                        <span className="text-sm">Español (es)</span>
                     </div>
 
                 </div>

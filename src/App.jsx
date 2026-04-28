@@ -7,10 +7,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta pública: Tu Landing Page */}
+        {/* Ruta pública: Landing Page */}
         <Route path="/" element={<Home />} />
 
-        {/* Ruta de la aplicación: El generador que construimos hoy */}
+        {/* Ruta de la aplicación: El generador */}
         <Route path="/evaluaciones-ia" element={<EvaluacionesIA />} />
       </Routes>
     </BrowserRouter>
