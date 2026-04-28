@@ -41,21 +41,27 @@ function EvaluacionesIA() {
   const cargarHistorial = async () => {
     setCargandoHistorial(true)
     try {
-      // 1. Obtenemos al usuario de la memoria
       const usuarioString = localStorage.getItem("usuarioQuizAI");
       if (!usuarioString) return;
       const usuario = JSON.parse(usuarioString);
       
-      // 2. Construimos la URL con "filtros" (Query Parameters)
-      // Le pasamos el ID y el Rol para que el Backend sepa qué buscarnos
       const url = `https://backend-tesis-x187.onrender.com/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
       
       const respuesta = await fetch(url);
+      
+      // ¡NUEVA LÓGICA DE SEGURIDAD!
+      if (!respuesta.ok) {
+        throw new Error("El servidor falló al pedir los datos");
+      }
+      
       const resultado = await respuesta.json();
       
-      setListaHistorial(resultado.data);
+      // Nos aseguramos de que SIEMPRE sea un arreglo, incluso si falla
+      setListaHistorial(resultado.data || []); 
+      
     } catch (err) {
       console.error("Error al cargar historial:", err)
+      setListaHistorial([]); // Si hay error, ponemos lista vacía para evitar la pantalla blanca
     } finally {
       setCargandoHistorial(false)
     }
