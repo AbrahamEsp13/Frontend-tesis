@@ -41,15 +41,19 @@ function EvaluacionesIA() {
   const cargarHistorial = async () => {
     setCargandoHistorial(true)
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/cuestionarios")
-      const resultado = await respuesta.json()
-      // Filtramos la lista dependiendo del rol
-      if (rol === 'estudiante') {
-        const publicados = resultado.data.filter(examen => examen.publicado === true)
-        setListaHistorial(publicados)
-      } else {
-        setListaHistorial(resultado.data) // El docente ve todos
-      }
+      // 1. Obtenemos al usuario de la memoria
+      const usuarioString = localStorage.getItem("usuarioQuizAI");
+      if (!usuarioString) return;
+      const usuario = JSON.parse(usuarioString);
+      
+      // 2. Construimos la URL con "filtros" (Query Parameters)
+      // Le pasamos el ID y el Rol para que el Backend sepa qué buscarnos
+      const url = `https://backend-tesis-x187.onrender.com/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
+      
+      const respuesta = await fetch(url);
+      const resultado = await respuesta.json();
+      
+      setListaHistorial(resultado.data);
     } catch (err) {
       console.error("Error al cargar historial:", err)
     } finally {
@@ -59,16 +63,30 @@ function EvaluacionesIA() {
 
 
   // --- LÓGICA DEL DOCENTE ---
-  const generarCuestionario = async () => {
+ const generarCuestionario = async () => {
     if (!archivo) return setError("⚠️ Selecciona un archivo PDF.")
     setCargando(true); setError(null);
+    
+    // 1. Extraemos los datos del usuario que guardamos en el login
+    const usuarioString = localStorage.getItem("usuarioQuizAI");
+    const usuario = JSON.parse(usuarioString);
+
     const formData = new FormData()
     formData.append("archivo", archivo)
+    
+    // 2. Le mandamos el ID al backend (el nombre debe ser igual al que pusimos en Python: usuario_id)
+    formData.append("usuario_id", usuario.id) 
+
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData })
+      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { 
+        method: "POST", 
+        body: formData 
+      });
+      
       if (!respuesta.ok) throw new Error("Fallo en el servidor.")
       alert("✅ ¡Cuestionario generado! Ve a tu historial para publicarlo.")
       setArchivo(null)
+      cargarHistorial() // Recargamos para ver el nuevo examen en nuestra lista
     } catch (err) {
       setError("❌ Error: " + err.message)
     } finally {
