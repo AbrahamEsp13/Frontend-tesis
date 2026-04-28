@@ -100,15 +100,41 @@ function EvaluacionesIA() {
     }
   }
 
-  const publicarExamen = async (id) => {
+ const publicarCuestionario = async (id) => {
+    // --- NUEVA ALERTA DE CONFIRMACIÓN ---
+    const confirmacion = window.confirm(
+      "⚠️ ¿Estás seguro de que quieres publicar este examen?\n\nUna vez publicado, los estudiantes podrán verlo y resolverlo."
+    );
+    
+    // Si el maestro hace clic en "Cancelar", detenemos la ejecución aquí mismo
+    if (!confirmacion) return;
+    // ------------------------------------
+
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, { method: 'PUT' })
-      alert("🚀 ¡Examen publicado! Los estudiantes ya pueden verlo.")
-      cargarHistorial() // Recargamos la lista para actualizar el estado
+      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, {
+        method: "PUT",
+      });
+      if (!respuesta.ok) throw new Error("Error al publicar");
+      
+      cargarHistorial(); // Recargamos la lista
     } catch (err) {
-      alert("Error al publicar.")
+      console.error("Error:", err);
     }
-  }
+  };
+
+
+  const despublicarCuestionario = async (id) => {
+    try {
+      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/despublicar`, {
+        method: "PUT",
+      });
+      if (!respuesta.ok) throw new Error("Error al quitar publicación");
+      
+      cargarHistorial(); // Recargamos la lista para ver el cambio
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
 
   const eliminarExamen = async (id) => {
     // Confirmación de seguridad para evitar borrados por accidente
@@ -339,8 +365,13 @@ function EvaluacionesIA() {
                   📥 Descargar PDF/TXT
                 </button>
 
-                {!registro.publicado && (
-                  <button onClick={() => publicarExamen(registro.id)} style={{ padding: '8px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                {/* LÓGICA CONDICIONAL DE BOTONES DE PUBLICACIÓN */}
+                {registro.publicado ? (
+                  <button onClick={() => despublicarCuestionario(registro.id)} style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    🚫 Ocultar Examen
+                  </button>
+                ) : (
+                  <button onClick={() => publicarCuestionario(registro.id)} style={{ padding: '8px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                     🚀 Publicar a Estudiantes
                   </button>
                 )}
