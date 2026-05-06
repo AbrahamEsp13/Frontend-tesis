@@ -5,36 +5,33 @@ function EvaluacionesIA() {
   const navigate = useNavigate();
 
   // --- ESTADOS DE SESIÓN Y VISTAS ---
-  const [rol, setRol] = useState(null); // 'docente' o 'estudiante'
-  const [vista, setVista] = useState('inicio'); // inicio, historial, nuevo, panel_estudiante, examen, dashboard, clases
+  const [rol, setRol] = useState(null);
+  const [vista, setVista] = useState('inicio'); 
   const [listaHistorial, setListaHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   
   // Estado para el menú desplegable del avatar
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
 
-  // Estados del generador (Solo Docente)
+  // Estados del generador
   const [archivo, setArchivo] = useState(null);
-  const [numPreguntas, setNumPreguntas] = useState(5); // Por defecto 5 preguntas
+  const [numPreguntas, setNumPreguntas] = useState(5);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estados del Examen (Estudiante y Vista Previa Docente)
+  // Estados del Examen
   const [examenActivo, setExamenActivo] = useState(null);
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [examenTerminado, setExamenTerminado] = useState(false);
-
-  // --- NUEVOS ESTADOS Y FUNCIONES PARA EDITAR ---
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // Leer la sesión al iniciar
+  // --- EFECTOS INICIALES ---
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuarioQuizAI");
     if (usuarioGuardado) {
       const usuario = JSON.parse(usuarioGuardado);
       setRol(usuario.rol);
-      // Lo mandamos directo a su panel principal según su rol
-      setVista(usuario.rol === 'docente' ? 'historial' : 'panel_estudiante');
+      setVista(usuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
     }
   }, []);
 
@@ -61,13 +58,10 @@ function EvaluacionesIA() {
       
       const url = `https://backend-tesis-x187.onrender.com/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
       const respuesta = await fetch(url);
-      
-      if (!respuesta.ok) throw new Error("El servidor falló al pedir los datos");
-      
+      if (!respuesta.ok) throw new Error("Fallo en servidor");
       const resultado = await respuesta.json();
       setListaHistorial(resultado.data || []); 
     } catch (err) {
-      console.error("Error al cargar historial:", err);
       setListaHistorial([]);
     } finally {
       setCargandoHistorial(false);
@@ -78,208 +72,137 @@ function EvaluacionesIA() {
   const generarCuestionario = async () => {
     if (!archivo) return setError("⚠️ Selecciona un archivo PDF.");
     setCargando(true); setError(null);
-    
-    const usuarioString = localStorage.getItem("usuarioQuizAI");
-    const usuario = JSON.parse(usuarioString);
-
+    const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
     const formData = new FormData();
     formData.append("archivo", archivo);
     formData.append("usuario_id", usuario.id); 
-    formData.append("num_preguntas", numPreguntas); // Mandamos la cantidad seleccionada
+    formData.append("num_preguntas", numPreguntas);
 
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { 
-        method: "POST", 
-        body: formData 
-      });
-      
+      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData });
       if (!respuesta.ok) throw new Error("Fallo en el servidor.");
       alert("✅ ¡Cuestionario generado! Ve a tu historial para publicarlo.");
       setArchivo(null);
-      setVista('historial'); // Lo regresamos al historial para ver su nuevo examen
+      setVista('historial'); 
       cargarHistorial(); 
-    } catch (err) {
-      setError("❌ Error: " + err.message);
-    } finally {
-      setCargando(false);
-    }
+    } catch (err) { setError("❌ Error: " + err.message); } 
+    finally { setCargando(false); }
   };
 
   const publicarCuestionario = async (id) => {
-    const confirmacion = window.confirm(
-      "⚠️ ¿Estás seguro de que quieres publicar este examen?\n\nUna vez publicado, los estudiantes podrán verlo y resolverlo."
-    );
-    if (!confirmacion) return;
-
+    if (!window.confirm("⚠️ ¿Publicar este examen a los estudiantes?")) return;
     try {
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, { method: "PUT" });
-      if (!respuesta.ok) throw new Error("Error al publicar");
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, { method: "PUT" });
       cargarHistorial(); 
-    } catch (err) {
-      console.error("Error:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const despublicarCuestionario = async (id) => {
     try {
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/despublicar`, { method: "PUT" });
-      if (!respuesta.ok) throw new Error("Error al quitar publicación");
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/despublicar`, { method: "PUT" });
       cargarHistorial(); 
-    } catch (err) {
-      console.error("Error:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const eliminarExamen = async (id) => {
-    if (!window.confirm("⚠️ ¿Estás seguro de que deseas eliminar este examen para siempre?")) return;
+    if (!window.confirm("⚠️ ¿Eliminar para siempre?")) return;
     try {
       await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}`, { method: 'DELETE' });
-      alert("🗑️ Examen eliminado de la base de datos.");
       cargarHistorial(); 
-    } catch (err) {
-      alert("Error al eliminar el examen.");
-    }
+    } catch (err) { alert("Error al eliminar."); }
   };
 
   const exportarExamen = (registro) => {
-    let contenido = `📝 EXAMEN: ${registro.nombre_documento}\nGenerado por QuizAI\n=================================================\n\n`;
+    let contenido = `📝 EXAMEN: ${registro.nombre_documento}\n========================\n\n`;
     registro.preguntas_json.forEach((p, index) => {
-      contenido += `${index + 1}. ${p.pregunta} (Nivel: ${p.nivel_bloom})\n`;
+      contenido += `${index + 1}. ${p.pregunta}\n`;
       p.opciones.forEach(op => { contenido += `   [  ] ${op}\n`; });
-      contenido += `\n   ✅ CLAVE: ${p.respuesta_correcta}\n   💡 Justificación: ${p.justificacion_pedagogica}\n-------------------------------------------------\n\n`;
+      contenido += `\n   ✅ CLAVE: ${p.respuesta_correcta}\n   💡 Justificación: ${p.justificacion_pedagogica}\n------------------------\n\n`;
     });
-
     const blob = new Blob([contenido], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = `Clave_Examen_${registro.nombre_documento}.txt`;
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
+    enlace.href = url; enlace.download = `Clave_${registro.nombre_documento}.txt`;
+    document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
   };
 
-  // --- LÓGICA DE EDICIÓN ---
-  const actualizarPregunta = (index, campo, valor) => {
-    const examenActualizado = { ...examenActivo };
-    examenActualizado.preguntas_json[index][campo] = valor;
-    setExamenActivo(examenActualizado);
-  };
-
-  const actualizarOpcion = (qIndex, optIndex, valor) => {
-    const examenActualizado = { ...examenActivo };
-    examenActualizado.preguntas_json[qIndex].opciones[optIndex] = valor;
-    setExamenActivo(examenActualizado);
-  };
-
-  const agregarPreguntaVacia = () => {
-    const examenActualizado = { ...examenActivo };
-    examenActualizado.preguntas_json.push({
-      pregunta: "Escribe la nueva pregunta aquí...",
-      opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"],
-      respuesta_correcta: "Opción 1",
-      justificacion_pedagogica: "Explica por qué esta es la correcta...",
-      nivel_bloom: "Recordar"
-    });
-    setExamenActivo(examenActualizado);
-  };
-
-  const eliminarPregunta = (index) => {
-    if (!window.confirm("¿Borrar esta pregunta?")) return;
-    const examenActualizado = { ...examenActivo };
-    examenActualizado.preguntas_json.splice(index, 1);
-    setExamenActivo(examenActualizado);
-  };
-
+  // --- LÓGICA DE EDICIÓN Y EXAMEN ---
+  const actualizarPregunta = (i, c, v) => { let ex = {...examenActivo}; ex.preguntas_json[i][c] = v; setExamenActivo(ex); };
+  const actualizarOpcion = (qi, oi, v) => { let ex = {...examenActivo}; ex.preguntas_json[qi].opciones[oi] = v; setExamenActivo(ex); };
+  const agregarPreguntaVacia = () => { let ex = {...examenActivo}; ex.preguntas_json.push({pregunta: "Nueva pregunta...", opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], respuesta_correcta: "Opción 1", justificacion_pedagogica: "...", nivel_bloom: "Recordar"}); setExamenActivo(ex); };
+  const eliminarPregunta = (index) => { if (!window.confirm("¿Borrar?")) return; let ex = {...examenActivo}; ex.preguntas_json.splice(index, 1); setExamenActivo(ex); };
   const guardarEdicionEnBackend = async () => {
     try {
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${examenActivo.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json })
-      });
-      if (!respuesta.ok) throw new Error("Error al guardar en la base de datos");
-      alert("✅ ¡Cambios guardados permanentemente!");
-      setModoEdicion(false); 
-      cargarHistorial(); 
-    } catch (error) {
-      alert("❌ " + error.message);
-    }
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${examenActivo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json }) });
+      alert("✅ ¡Cambios guardados!"); setModoEdicion(false); cargarHistorial(); 
+    } catch (error) { alert("❌ " + error.message); }
   };
 
-  // --- LÓGICA DEL EXAMEN INTERACTIVO ---
-  const iniciarExamen = (registro) => {
-    setExamenActivo(registro); setRespuestasUsuario({}); setExamenTerminado(false); setVista('examen');
-  };
-
-  const seleccionarOpcion = (preguntaIndex, opcionElegida) => {
-    if (examenTerminado) return;
-    setRespuestasUsuario({ ...respuestasUsuario, [preguntaIndex]: opcionElegida });
-  };
-
-  const calcularCalificacion = () => {
-    let correctas = 0;
-    examenActivo.preguntas_json.forEach((pregunta, index) => {
-      if (respuestasUsuario[index] === pregunta.respuesta_correcta) correctas++;
-    });
-    return correctas;
-  };
+  const iniciarExamen = (registro) => { setExamenActivo(registro); setRespuestasUsuario({}); setExamenTerminado(false); setVista('examen'); };
+  const seleccionarOpcion = (pi, op) => { if (!examenTerminado) setRespuestasUsuario({ ...respuestasUsuario, [pi]: op }); };
+  const calcularCalificacion = () => { let c = 0; examenActivo.preguntas_json.forEach((p, i) => { if (respuestasUsuario[i] === p.respuesta_correcta) c++; }); return c; };
 
 
   // ==========================================
   // RENDERIZADO DE LA INTERFAZ
   // ==========================================
 
-  // 1. PANTALLA DE SELECCIÓN DE ROL (Para usuarios que recién inician sin rol)
+  // 1. PANTALLA DE SELECCIÓN DE ROL
   if (!rol) {
     return (
       <div className="max-w-xl mx-auto mt-24 text-center font-sans">
         <h1 className="text-4xl font-extrabold text-blue-700 mb-4">🧠 QuizAI</h1>
         <p className="text-gray-500 mb-10">Selecciona tu perfil para ingresar a la plataforma</p>
         <div className="flex gap-6 justify-center">
-          <button onClick={() => { setRol('docente'); setVista('historial'); }} className="p-8 text-xl w-52 cursor-pointer bg-gray-800 text-white border-none rounded-2xl shadow-lg hover:bg-gray-700 transition-colors">👨‍🏫 Soy Docente</button>
+          <button onClick={() => { setRol('docente'); setVista('dashboard'); }} className="p-8 text-xl w-52 cursor-pointer bg-gray-800 text-white border-none rounded-2xl shadow-lg hover:bg-gray-700 transition-colors">👨‍🏫 Soy Docente</button>
           <button onClick={() => { setRol('estudiante'); setVista('panel_estudiante'); }} className="p-8 text-xl w-52 cursor-pointer bg-blue-600 text-white border-none rounded-2xl shadow-lg hover:bg-blue-700 transition-colors">🎓 Soy Estudiante</button>
         </div>
       </div>
     );
   }
 
-  // 2. SHELL DE LA APLICACIÓN (DASHBOARD)
+  // 2. SHELL DE LA APLICACIÓN (NUEVO DISEÑO)
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-sans text-gray-800">
       
-      {/* --- BARRA DE NAVEGACIÓN SUPERIOR --- */}
-      <nav className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-20 shadow-sm relative">
+      {/* --- NAVBAR SUPERIOR --- */}
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-md z-50 flex items-center justify-between px-8 border-b border-gray-200">
         {/* LOGO CENTRADO CON EL RESTO */}
-        <div className="text-3xl font-extrabold text-blue-700 tracking-tight flex items-center select-none cursor-pointer" onClick={() => setVista(rol === 'docente' ? 'historial' : 'panel_estudiante')}>
-          🧠 QuizAI
+        <div className="flex items-center gap-8">
+          <span className="text-2xl font-extrabold text-blue-700 tracking-tight cursor-pointer" onClick={() => setVista(rol === 'docente' ? 'dashboard' : 'panel_estudiante')}>
+            QuizAI
+          </span>
         </div>
 
         {/* BOTONES DERECHA */}
-        <div className="flex items-center gap-6">
-          <button className="text-gray-400 hover:text-blue-600 text-2xl transition-colors cursor-pointer bg-transparent border-none">🔔</button>
-          <button className="text-gray-400 hover:text-blue-600 text-2xl transition-colors cursor-pointer bg-transparent border-none">❓</button>
+        <div className="flex items-center gap-5">
+          <button className="text-gray-500 hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-none flex items-center justify-center p-2 rounded-full hover:bg-gray-100">
+            <span className="material-symbols-outlined">notifications</span>
+          </button>
+          <button className="text-gray-500 hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-none flex items-center justify-center p-2 rounded-full hover:bg-gray-100">
+            <span className="material-symbols-outlined">help</span>
+          </button>
 
           {/* MENÚ DESPLEGABLE DEL USUARIO */}
           <div className="relative">
-            <button 
+            <img 
               onClick={() => setMenuUsuarioAbierto(!menuUsuarioAbierto)}
-              className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center border-2 border-transparent hover:border-blue-500 transition-all text-2xl cursor-pointer shadow-sm"
-            >
-              👤
-            </button>
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
+              alt="Avatar" 
+              className="w-9 h-9 rounded-full cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all object-cover bg-blue-100"
+            />
 
             {menuUsuarioAbierto && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
                 <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent">
-                  <span className="text-lg">👤</span> Ver perfil
+                  <span className="material-symbols-outlined text-lg">person</span> Ver perfil
                 </button>
                 <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent">
-                  <span className="text-lg">⚙️</span> Configuración
+                  <span className="material-symbols-outlined text-lg">settings</span> Configuración
                 </button>
                 <div className="border-t border-gray-100 my-1"></div>
                 <button onClick={cerrarSesion} className="w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold cursor-pointer flex items-center gap-3 border-none bg-transparent">
-                  <span className="text-lg">🚪</span> Cerrar Sesión
+                  <span className="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
                 </button>
               </div>
             )}
@@ -287,157 +210,232 @@ function EvaluacionesIA() {
         </div>
       </nav>
 
-      {/* --- CONTENEDOR PRINCIPAL (SIDEBAR + CONTENIDO) --- */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* --- CONTENEDOR PRINCIPAL --- */}
+      <div className="flex flex-1 overflow-hidden mt-16">
         
         {/* SIDEBAR LATERAL IZQUIERDO */}
-        <aside className="w-64 bg-white border-r border-gray-200 flex flex-col py-6 px-4 hidden md:flex z-10">
-          <div className="flex flex-col gap-2">
+        <aside className="fixed left-0 top-16 bottom-0 w-64 bg-gray-50 p-4 flex flex-col z-40 border-r border-gray-200 hidden md:flex">
+          <div className="flex flex-col gap-1 mt-4">
             {rol === 'docente' ? (
               <>
-                <button onClick={() => setVista('dashboard')} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all cursor-pointer border-none text-left ${vista === 'dashboard' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}>
-                  📊 Dashboard
+                <button onClick={() => setVista('dashboard')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'dashboard' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
+                  <span className="material-symbols-outlined">dashboard</span> Dashboard
                 </button>
-                {/* Modificado para que vaya directo a crear un nuevo cuestionario como lo pediste */}
-                <button onClick={() => setVista('nuevo')} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all cursor-pointer border-none text-left ${vista === 'nuevo' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}>
-                  ✨ Crear Cuestionario
+                {/* Botón directo a crear cuestionario como pediste */}
+                <button onClick={() => setVista('nuevo')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'nuevo' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
+                  <span className="material-symbols-outlined">add_circle</span> Crear Cuestionario
                 </button>
-                <button onClick={() => setVista('historial')} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all cursor-pointer border-none text-left ${vista === 'historial' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}>
-                  📁 Mis Cuestionarios
+                <button onClick={() => setVista('historial')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'historial' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
+                  <span className="material-symbols-outlined">quiz</span> Historial de Exámenes
                 </button>
-                <button onClick={() => setVista('clases')} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all cursor-pointer border-none text-left ${vista === 'clases' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}>
-                  🎓 Clases
+                <button onClick={() => setVista('clases')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'clases' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
+                  <span className="material-symbols-outlined">school</span> Clases
                 </button>
               </>
             ) : (
-              <button onClick={() => setVista('panel_estudiante')} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all cursor-pointer border-none text-left ${vista === 'panel_estudiante' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}>
-                🎓 Mis Evaluaciones
+              <button onClick={() => setVista('panel_estudiante')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'panel_estudiante' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
+                <span className="material-symbols-outlined">school</span> Mis Evaluaciones
               </button>
             )}
           </div>
         </aside>
 
-        {/* --- ÁREA DE CONTENIDO DINÁMICO --- */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-8">
-          <div className="max-w-4xl mx-auto">
+        {/* --- ÁREA DE CONTENIDO (MAIN) --- */}
+        <main className="ml-0 md:ml-64 flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)]">
+          <div className="max-w-6xl mx-auto">
 
-            {/* VISTA: DASHBOARD O CLASES (MOCKUP) */}
-            {(vista === 'dashboard' || vista === 'clases') && (
-              <div className="text-center mt-20">
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Próximamente</h2>
-                <p className="text-gray-500">Esta sección se encuentra en desarrollo.</p>
+            {/* VISTA 1: DASHBOARD (MOCKUP DEL HTML QUE MANDASTE) */}
+            {vista === 'dashboard' && (
+              <div>
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-500 mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider">Analítica del Curso</span>
+                      <span className="material-symbols-outlined text-xs">chevron_right</span>
+                      <span className="text-xs font-bold uppercase tracking-wider">Biología 101</span>
+                    </div>
+                    <h1 className="text-4xl font-bold tracking-tight text-gray-900">Biología Molecular Básica</h1>
+                    <p className="text-gray-500 mt-2 max-w-lg">Análisis de rendimiento a profundidad para la evaluación parcial.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 border-none cursor-pointer transition-colors">
+                      <span className="material-symbols-outlined text-sm">mail</span> Enviar Recordatorios
+                    </button>
+                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 border-none cursor-pointer transition-colors">
+                      <span className="material-symbols-outlined text-sm">picture_as_pdf</span> Exportar PDF
+                    </button>
+                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 border-none cursor-pointer transition-colors">
+                      <span className="material-symbols-outlined text-sm">download</span> Descargar Reporte
+                    </button>
+                  </div>
+                </header>
+
+                <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="p-2 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">grade</span></span>
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">+4.2%</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">84.5%</div>
+                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Puntaje Promedio</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="p-2 bg-green-50 text-green-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">check_circle</span></span>
+                      <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">Meta 90%</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">92%</div>
+                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Tasa de Finalización</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="p-2 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">timer</span></span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">14m 20s</div>
+                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Tiempo Promedio</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="p-2 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">groups</span></span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">148</div>
+                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Participantes</div>
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center mt-10">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Gráficas en construcción</h3>
+                  <p className="text-gray-500">Esta sección se conectará con los datos de tus estudiantes en las próximas actualizaciones.</p>
+                </section>
               </div>
             )}
 
-            {/* VISTA: CREAR EXAMEN (SÓLO DOCENTE) */}
+            {/* VISTA 2: CREAR EXAMEN (SÓLO DOCENTE) */}
             {vista === 'nuevo' && rol === 'docente' && (
-              <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Crear Nuevo Examen</h2>
-                <p className="text-gray-500 mb-8">Sube tus apuntes, elige cuántas preguntas necesitas y la IA creará un examen interactivo.</p>
+              <div className="max-w-3xl">
+                <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">Crear Nuevo Examen</h2>
+                <p className="text-gray-500 mb-8">Sube tus apuntes, elige cuántas preguntas necesitas y la Inteligencia Artificial generará la evaluación.</p>
                 
-                <div className="my-5 p-8 border-2 border-dashed border-gray-300 rounded-2xl bg-white shadow-sm">
-                  <div className="mb-6">
-                    <label className="block font-bold mb-2 text-gray-800">Cantidad de preguntas a generar:</label>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      max="15" 
-                      value={numPreguntas} 
-                      onChange={(e) => setNumPreguntas(e.target.value)} 
-                      className="p-3 rounded-lg border border-gray-300 w-24 text-lg outline-none focus:ring-2 focus:ring-blue-500" 
-                    />
-                    <span className="ml-3 text-gray-500 text-sm">preguntas (Máximo 15)</span>
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                  <div className="mb-8 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                    <label className="flex items-center gap-2 font-bold mb-3 text-gray-800">
+                      <span className="material-symbols-outlined text-blue-600">format_list_numbered</span>
+                      Cantidad de preguntas:
+                    </label>
+                    <div className="flex items-center">
+                      <input type="number" min="1" max="15" value={numPreguntas} onChange={(e) => setNumPreguntas(e.target.value)} className="p-3 rounded-lg border border-gray-300 w-24 text-lg outline-none focus:ring-2 focus:ring-blue-500 text-center font-bold text-gray-700" />
+                      <span className="ml-3 text-gray-500 text-sm font-medium">reactivos (Máximo 15 recomendados)</span>
+                    </div>
                   </div>
                   
-                  <input type="file" accept=".pdf" onChange={(e) => setArchivo(e.target.files[0])} className="block mb-6 w-full text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                  <div className="mb-8 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                    <label className="flex items-center gap-2 font-bold mb-3 text-gray-800">
+                      <span className="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                      Documento Base (PDF):
+                    </label>
+                    <input type="file" accept=".pdf" onChange={(e) => setArchivo(e.target.files[0])} className="block w-full text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                  </div>
                   
-                  <button onClick={generarCuestionario} disabled={cargando} className={`py-3 px-6 text-lg font-bold text-white border-none rounded-xl shadow-md transition-all ${cargando ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 cursor-pointer'}`}>
-                    {cargando ? "⏳ Analizando PDF e IA trabajando..." : "Generar Examen con IA"}
+                  <button onClick={generarCuestionario} disabled={cargando} className={`w-full py-4 px-6 text-lg font-bold text-white border-none rounded-xl shadow-md transition-all flex justify-center items-center gap-2 ${cargando ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
+                    {cargando ? <span className="material-symbols-outlined animate-spin">sync</span> : <span className="material-symbols-outlined">auto_awesome</span>}
+                    {cargando ? "Analizando PDF e IA trabajando..." : "Generar Examen Mágico"}
                   </button>
                 </div>
-                {error && <div className="text-red-700 p-4 bg-red-50 rounded-lg mt-4 border border-red-200">{error}</div>}
+                {error && <div className="text-red-700 p-4 bg-red-50 rounded-lg mt-4 border border-red-200 flex items-center gap-2"><span className="material-symbols-outlined">error</span> {error}</div>}
               </div>
             )}
 
-            {/* VISTA: HISTORIAL DEL DOCENTE */}
+            {/* VISTA 3: HISTORIAL DEL DOCENTE */}
             {vista === 'historial' && rol === 'docente' && (
               <div>
                 <div className="flex justify-between items-center mb-8">
                   <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 mb-1">Mis Cuestionarios</h2>
-                    <p className="text-gray-500">Administra tus evaluaciones y publícalas a tus estudiantes.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
+                    <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes.</p>
                   </div>
-                  <button onClick={() => setVista('nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg border-none transition-all cursor-pointer">
-                    ✨ Crear Nuevo
-                  </button>
                 </div>
 
-                {cargandoHistorial ? <p className="text-gray-500 font-bold">⏳ Cargando tus documentos...</p> : listaHistorial.map((registro) => (
-                  <div key={registro.id} className={`border p-6 rounded-2xl mb-4 bg-white shadow-sm flex flex-col ${registro.publicado ? 'border-l-4 border-l-green-500 border-gray-200' : 'border-l-4 border-l-yellow-400 border-gray-200'}`}>
-                    <div className="flex justify-between items-center mb-1">
-                      <h3 className="m-0 text-xl font-bold text-gray-800">📄 {registro.nombre_documento}</h3>
-                      <span className={`text-xs px-3 py-1.5 rounded-md font-bold ${registro.publicado ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {registro.publicado ? '✅ Publicado' : '📝 Borrador'}
+                {cargandoHistorial ? (
+                  <div className="flex items-center gap-3 text-gray-500 font-bold p-8 justify-center"><span className="material-symbols-outlined animate-spin">sync</span> Cargando documentos...</div>
+                ) : listaHistorial.map((registro) => (
+                  <div key={registro.id} className="bg-white border p-6 rounded-2xl mb-5 shadow-sm flex flex-col hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-gray-400">description</span> {registro.nombre_documento}
+                      </h3>
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1 border ${registro.publicado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                        {registro.publicado ? <><span className="material-symbols-outlined text-[14px]">check_circle</span> Publicado</> : <><span className="material-symbols-outlined text-[14px]">edit_document</span> Borrador</>}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-5">Creado: {new Date(registro.fecha_creacion).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500 mb-6 flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">calendar_today</span> Creado el: {new Date(registro.fecha_creacion).toLocaleDateString()}</p>
 
-                    <div className="flex gap-3 flex-wrap items-center">
-                      <button onClick={() => iniciarExamen(registro)} className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white border-none rounded-lg cursor-pointer font-semibold transition-colors">👁️ Vista Previa</button>
-                      <button onClick={() => exportarExamen(registro)} className="py-2 px-4 bg-cyan-600 hover:bg-cyan-700 text-white border-none rounded-lg cursor-pointer font-semibold transition-colors">📥 Descargar Txt</button>
+                    <div className="flex gap-3 flex-wrap items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <button onClick={() => iniciarExamen(registro)} className="flex items-center gap-2 py-2 px-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">visibility</span> Vista Previa</button>
+                      <button onClick={() => exportarExamen(registro)} className="flex items-center gap-2 py-2 px-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">download</span> Exportar Txt</button>
                       
+                      <div className="flex-1"></div> {/* Separador flexible */}
+
                       {registro.publicado ? (
-                        <button onClick={() => despublicarCuestionario(registro.id)} className="py-2 px-4 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg cursor-pointer font-semibold transition-colors">🚫 Ocultar Examen</button>
+                        <button onClick={() => despublicarCuestionario(registro.id)} className="flex items-center gap-2 py-2 px-4 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer font-bold transition-colors text-sm"><span className="material-symbols-outlined text-[18px]">visibility_off</span> Ocultar a Alumnos</button>
                       ) : (
-                        <button onClick={() => publicarCuestionario(registro.id)} className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white border-none rounded-lg cursor-pointer font-semibold transition-colors">🚀 Publicar</button>
+                        <button onClick={() => publicarCuestionario(registro.id)} className="flex items-center gap-2 py-2 px-4 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">rocket_launch</span> Publicar a Alumnos</button>
                       )}
                       
-                      <button onClick={() => eliminarExamen(registro.id)} className="py-2 px-4 bg-transparent text-red-600 border border-red-600 hover:bg-red-50 rounded-lg cursor-pointer ml-auto font-semibold transition-colors">🗑️ Eliminar</button>
+                      <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2 py-2 px-3 bg-transparent text-gray-400 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors" title="Eliminar"><span className="material-symbols-outlined">delete</span></button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* VISTA: PANEL DEL ESTUDIANTE */}
+            {/* VISTA 4: PANEL DEL ESTUDIANTE */}
             {vista === 'panel_estudiante' && rol === 'estudiante' && (
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">🎓 Evaluaciones Disponibles</h2>
+                <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">🎓 Evaluaciones Disponibles</h2>
                 <p className="text-gray-500 mb-8">Selecciona una evaluación para comenzar. ¡Mucho éxito!</p>
-                {cargandoHistorial ? <p className="text-gray-500 font-bold">⏳ Buscando evaluaciones...</p> : listaHistorial.length === 0 ? <div className="bg-blue-50 text-blue-700 p-6 rounded-xl font-bold text-center border border-blue-100">No hay exámenes publicados por tus maestros en este momento.</div> : listaHistorial.map((registro) => (
-                  <div key={registro.id} className="border border-blue-200 p-6 rounded-2xl mb-5 bg-blue-50/50 shadow-sm transition-transform hover:-translate-y-1">
-                    <h3 className="m-0 text-xl font-extrabold text-blue-800 mb-2">📝 {registro.nombre_documento}</h3>
-                    <p className="text-sm text-blue-600 font-semibold mb-4">Preguntas: {registro.preguntas_json.length}</p>
-                    <button onClick={() => iniciarExamen(registro)} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white border-none rounded-xl cursor-pointer font-bold text-lg shadow-md transition-colors">
-                      Iniciar Evaluación ▶️
+                {cargandoHistorial ? <p className="text-gray-500 font-bold">⏳ Buscando evaluaciones...</p> : listaHistorial.length === 0 ? <div className="bg-white border p-8 rounded-2xl shadow-sm text-center"><span className="material-symbols-outlined text-4xl text-gray-300 mb-3 block">inbox</span><p className="text-gray-500 font-medium m-0">No hay exámenes publicados por tus maestros en este momento.</p></div> : listaHistorial.map((registro) => (
+                  <div key={registro.id} className="bg-white border border-gray-200 p-6 rounded-2xl mb-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="m-0 text-xl font-bold text-blue-800 flex items-center gap-2"><span className="material-symbols-outlined">assignment</span> {registro.nombre_documento}</h3>
+                      <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">{registro.preguntas_json.length} Preguntas</span>
+                    </div>
+                    <button onClick={() => iniciarExamen(registro)} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-xl cursor-pointer font-bold text-lg shadow-sm transition-colors flex justify-center items-center gap-2">
+                      <span className="material-symbols-outlined">play_circle</span> Iniciar Evaluación
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* VISTA: EXAMEN INTERACTIVO / EDITOR */}
+            {/* VISTA 5: EXAMEN INTERACTIVO / EDITOR */}
             {vista === 'examen' && examenActivo && (
-              <div className="text-left bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-200">
                 
-                {/* CABECERA DINÁMICA */}
-                <div className="flex justify-between items-center mb-8 border-b pb-4">
-                  <h2 className="text-2xl font-extrabold text-gray-800 m-0">
-                    {rol === 'docente' ? (modoEdicion ? '✏️ Modo Editor: ' : '👁️ Vista Previa: ') : '📝 Evaluación: '} 
-                    {examenActivo.nombre_documento}
-                  </h2>
+                <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-6">
+                  <div>
+                    <span className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-1 block">
+                      {rol === 'docente' ? (modoEdicion ? 'Modo Edición' : 'Vista Previa del Docente') : 'Evaluación en curso'}
+                    </span>
+                    <h2 className="text-3xl font-extrabold text-gray-900 m-0">{examenActivo.nombre_documento}</h2>
+                  </div>
                   {rol === 'docente' && !modoEdicion && (
-                    <button onClick={() => setModoEdicion(true)} className="py-2 px-5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-extrabold border-none rounded-lg cursor-pointer shadow-sm transition-colors">
-                      ✏️ Editar Cuestionario
+                    <button onClick={() => setModoEdicion(true)} className="flex items-center gap-2 py-2 px-5 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-bold border border-yellow-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                      <span className="material-symbols-outlined text-[20px]">edit</span> Editar Cuestionario
                     </button>
                   )}
                 </div>
 
                 {/* Calificación: Solo estudiantes */}
                 {examenTerminado && rol === 'estudiante' && (
-                  <div className="p-6 bg-blue-50 rounded-xl mb-8 border-l-4 border-blue-600 flex items-center justify-between">
-                    <h3 className="m-0 text-xl text-blue-900">Calificación Final:</h3>
-                    <span className="text-3xl font-extrabold text-blue-700">{calcularCalificacion()} / {examenActivo.preguntas_json.length}</span>
+                  <div className="p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl mb-10 border border-blue-100 flex items-center justify-between shadow-sm">
+                    <div>
+                      <h3 className="m-0 text-2xl font-bold text-gray-800 mb-1">¡Evaluación completada!</h3>
+                      <p className="text-gray-500 m-0 font-medium">Revisa tu retroalimentación abajo.</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-bold text-blue-600 uppercase tracking-widest block mb-1">Tu Calificación</span>
+                      <span className="text-5xl font-extrabold text-blue-700">{calcularCalificacion()} <span className="text-2xl text-blue-300">/ {examenActivo.preguntas_json.length}</span></span>
+                    </div>
                   </div>
                 )}
 
@@ -447,50 +445,56 @@ function EvaluacionesIA() {
                   const esCorrecta = respuestaElegida === pregunta.respuesta_correcta;
 
                   return (
-                    <div key={index} className="border border-gray-200 p-6 rounded-xl mb-6 bg-gray-50 relative">
+                    <div key={index} className="border border-gray-200 p-8 rounded-2xl mb-8 bg-gray-50 relative group">
                       
-                      {/* Botón borrar pregunta (Solo Editor) */}
                       {modoEdicion && (
-                        <button onClick={() => eliminarPregunta(index)} className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white border-none rounded-md px-3 py-1 cursor-pointer font-bold text-sm">🗑️ Borrar</button>
+                        <button onClick={() => eliminarPregunta(index)} className="absolute top-4 right-4 bg-white text-red-500 hover:bg-red-50 hover:text-red-600 border border-red-200 rounded-lg p-2 cursor-pointer font-bold shadow-sm transition-colors opacity-0 group-hover:opacity-100"><span className="material-symbols-outlined">delete</span></button>
                       )}
 
                       {/* NIVEL BLOOM Y PREGUNTA */}
-                      {modoEdicion ? (
-                         <input type="text" value={pregunta.nivel_bloom} onChange={(e) => actualizarPregunta(index, 'nivel_bloom', e.target.value)} className="mb-3 p-2 w-40 block rounded border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nivel Bloom"/>
-                      ) : (
-                         <span className="bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold shadow-sm">Nivel: {pregunta.nivel_bloom}</span>
-                      )}
+                      <div className="mb-4">
+                        {modoEdicion ? (
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm font-bold text-gray-500">Nivel:</span>
+                            <input type="text" value={pregunta.nivel_bloom} onChange={(e) => actualizarPregunta(index, 'nivel_bloom', e.target.value)} className="p-2 rounded-lg border border-gray-300 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-700 bg-white" placeholder="Nivel Bloom"/>
+                          </div>
+                        ) : (
+                          <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-xs font-bold tracking-widest uppercase">{pregunta.nivel_bloom}</span>
+                        )}
 
-                      {modoEdicion ? (
-                         <textarea value={pregunta.pregunta} onChange={(e) => actualizarPregunta(index, 'pregunta', e.target.value)} className="w-full p-3 mt-3 rounded border border-blue-500 font-bold outline-none focus:ring-2 focus:ring-blue-500 resize-y" rows="2" />
-                      ) : (
-                         <h3 className="mt-4 text-lg font-bold text-gray-800">{index + 1}. {pregunta.pregunta}</h3>
-                      )}
+                        {modoEdicion ? (
+                          <textarea value={pregunta.pregunta} onChange={(e) => actualizarPregunta(index, 'pregunta', e.target.value)} className="w-full p-4 mt-3 rounded-xl border border-gray-300 font-bold text-lg outline-none focus:ring-2 focus:ring-blue-500 resize-y bg-white text-gray-800" rows="2" />
+                        ) : (
+                          <h3 className="mt-4 text-xl font-bold text-gray-800 leading-relaxed"><span className="text-blue-600 mr-2">{index + 1}.</span> {pregunta.pregunta}</h3>
+                        )}
+                      </div>
                       
                       {/* OPCIONES */}
-                      <div className="flex flex-col gap-3 mt-5">
+                      <div className="flex flex-col gap-3 mt-6">
                         {pregunta.opciones.map((opcion, i) => {
-                          let bgColor = 'bg-white'; let borderColor = 'border-gray-300'; let textColor = 'text-gray-700';
-                          let esCorrectaDocente = rol === 'docente' && opcion === pregunta.respuesta_correcta;
+                          let bg = 'bg-white'; let border = 'border-gray-200'; let text = 'text-gray-700';
+                          let esCorrectaDocente = rol === 'docente' && !modoEdicion && opcion === pregunta.respuesta_correcta;
 
-                          if (rol === 'docente' && !modoEdicion && esCorrectaDocente) { bgColor = 'bg-green-50'; borderColor = 'border-green-500'; textColor='text-green-800 font-bold'; }
+                          if (esCorrectaDocente) { bg = 'bg-green-50'; border = 'border-green-500'; text='text-green-800 font-bold'; }
                           else if (rol === 'estudiante') {
                               if (examenTerminado) {
-                                if (opcion === pregunta.respuesta_correcta) { bgColor = 'bg-green-100'; borderColor = 'border-green-400'; textColor='text-green-800 font-bold'; }
-                                else if (respuestaElegida === opcion && !esCorrecta) { bgColor = 'bg-red-50'; borderColor = 'border-red-300'; textColor='text-red-700'; }
-                              } else if (respuestaElegida === opcion) { bgColor = 'bg-blue-50'; borderColor = 'border-blue-400'; textColor='text-blue-800 font-bold'; }
+                                if (opcion === pregunta.respuesta_correcta) { bg = 'bg-green-50'; border = 'border-green-500'; text='text-green-800 font-bold'; }
+                                else if (respuestaElegida === opcion && !esCorrecta) { bg = 'bg-red-50'; border = 'border-red-400'; text='text-red-700 font-bold'; }
+                              } else if (respuestaElegida === opcion) { bg = 'bg-blue-50'; border = 'border-blue-500'; text='text-blue-800 font-bold'; }
                           }
 
                           return (
                             <div key={i} className="flex gap-3 items-center">
                                {modoEdicion ? (
-                                 <>
-                                   <input type="radio" name={`correcta-${index}`} checked={pregunta.respuesta_correcta === opcion} onChange={() => actualizarPregunta(index, 'respuesta_correcta', opcion)} className="w-5 h-5 cursor-pointer accent-green-600" title="Marcar como correcta"/>
-                                   <input type="text" value={opcion} onChange={(e) => actualizarOpcion(index, i, e.target.value)} className={`flex-1 p-3 rounded-lg border outline-none focus:ring-2 focus:ring-blue-500 ${pregunta.respuesta_correcta === opcion ? 'border-green-500 bg-green-50 font-bold text-green-900' : 'border-gray-300 bg-white'}`}/>
-                                 </>
+                                 <div className="flex w-full gap-3 items-center p-2 rounded-xl bg-white border border-gray-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                                   <input type="radio" name={`correcta-${index}`} checked={pregunta.respuesta_correcta === opcion} onChange={() => actualizarPregunta(index, 'respuesta_correcta', opcion)} className="w-5 h-5 ml-2 cursor-pointer accent-green-600" title="Marcar como correcta"/>
+                                   <input type="text" value={opcion} onChange={(e) => actualizarOpcion(index, i, e.target.value)} className={`flex-1 p-2 border-none outline-none bg-transparent ${pregunta.respuesta_correcta === opcion ? 'font-bold text-green-700' : 'text-gray-700'}`}/>
+                                   {pregunta.respuesta_correcta === opcion && <span className="material-symbols-outlined text-green-500 mr-2">check_circle</span>}
+                                 </div>
                                ) : (
-                                 <button onClick={() => { if (rol !== 'docente') seleccionarOpcion(index, opcion) }} className={`w-full text-left p-4 ${bgColor} border-2 ${borderColor} rounded-xl ${textColor} transition-all ${(!examenTerminado && rol !== 'docente') ? 'hover:border-blue-500 hover:bg-blue-50 cursor-pointer' : 'cursor-default'}`}>
-                                   {opcion} {esCorrectaDocente && " ✅"}
+                                 <button onClick={() => { if (rol !== 'docente') seleccionarOpcion(index, opcion) }} className={`w-full text-left p-4 ${bg} border-2 ${border} rounded-xl ${text} transition-all ${(!examenTerminado && rol !== 'docente') ? 'hover:border-blue-300 hover:bg-blue-50 cursor-pointer shadow-sm' : 'cursor-default'} flex items-center justify-between`}>
+                                   <span>{opcion}</span>
+                                   {esCorrectaDocente && <span className="material-symbols-outlined text-green-600">check_circle</span>}
                                  </button>
                                )}
                             </div>
@@ -500,14 +504,17 @@ function EvaluacionesIA() {
 
                       {/* JUSTIFICACIÓN */}
                       {(examenTerminado || rol === 'docente') && (
-                        <div className={`mt-6 p-4 bg-white rounded-lg border border-gray-100 border-l-4 shadow-sm ${rol === 'docente' ? 'border-l-cyan-500' : (esCorrecta ? 'border-l-green-500' : 'border-l-red-500')}`}>
+                        <div className={`mt-6 p-5 bg-white rounded-xl border ${modoEdicion ? 'border-gray-200' : (esCorrecta ? 'border-green-200 bg-green-50/30' : (rol === 'docente' ? 'border-blue-200 bg-blue-50/30' : 'border-red-200 bg-red-50/30'))}`}>
                           {modoEdicion ? (
                              <>
-                               <strong className="text-gray-600 text-sm block mb-1">Retroalimentación:</strong>
-                               <textarea value={pregunta.justificacion_pedagogica} onChange={(e) => actualizarPregunta(index, 'justificacion_pedagogica', e.target.value)} className="w-full p-2 rounded border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 text-sm" rows="2" />
+                               <strong className="flex items-center gap-2 text-gray-700 mb-2 font-bold"><span className="material-symbols-outlined text-[18px]">lightbulb</span> Retroalimentación Pedagógica:</strong>
+                               <textarea value={pregunta.justificacion_pedagogica} onChange={(e) => actualizarPregunta(index, 'justificacion_pedagogica', e.target.value)} className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-gray-50 text-gray-700" rows="2" />
                              </>
                           ) : (
-                             <p className="m-0 text-sm text-gray-700 leading-relaxed"><strong>💡 Retroalimentación:</strong> {pregunta.justificacion_pedagogica}</p>
+                             <p className="m-0 text-sm text-gray-700 leading-relaxed flex items-start gap-2">
+                               <span className="material-symbols-outlined text-yellow-500">lightbulb</span> 
+                               <span><strong>Por qué esta respuesta es correcta:</strong><br/>{pregunta.justificacion_pedagogica}</span>
+                             </p>
                           )}
                         </div>
                       )}
@@ -515,35 +522,35 @@ function EvaluacionesIA() {
                   )
                 })}
 
-                {/* BOTONES DE EDICIÓN EXTRAS */}
+                {/* BOTÓN EXTRA MODO EDICIÓN */}
                 {modoEdicion && (
-                  <div className="flex justify-center mb-8 mt-4">
-                     <button onClick={agregarPreguntaVacia} className="py-3 px-6 bg-cyan-50 text-cyan-700 font-extrabold border-2 border-dashed border-cyan-500 rounded-xl cursor-pointer hover:bg-cyan-100 transition-colors">
-                       ➕ Añadir Nueva Pregunta
+                  <div className="flex justify-center mb-10 border-2 border-dashed border-gray-300 rounded-2xl p-6 bg-gray-50">
+                     <button onClick={agregarPreguntaVacia} className="flex items-center gap-2 py-3 px-6 bg-white text-gray-700 font-bold border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-100 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm">
+                       <span className="material-symbols-outlined">add</span> Añadir Nueva Pregunta
                      </button>
                   </div>
                 )}
 
-                {/* --- BOTONERA INFERIOR DINÁMICA --- */}
+                {/* --- BOTONERA INFERIOR --- */}
                 {rol === 'docente' ? (
                     modoEdicion ? (
-                      <div className="flex gap-4 pt-4 border-t border-gray-200">
-                         <button onClick={() => setModoEdicion(false)} className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white text-lg font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors">Cancelar Edición</button>
-                         <button onClick={guardarEdicionEnBackend} className="flex-2 py-4 bg-green-600 hover:bg-green-700 text-white text-lg font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors w-full">💾 Guardar Cambios</button>
+                      <div className="flex gap-4 pt-6 border-t border-gray-100">
+                         <button onClick={() => setModoEdicion(false)} className="flex-1 py-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold rounded-xl cursor-pointer transition-colors">Cancelar Edición</button>
+                         <button onClick={guardarEdicionEnBackend} className="flex-[2] flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-700 text-white font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors"><span className="material-symbols-outlined">save</span> Guardar Cambios en Base de Datos</button>
                       </div>
                     ) : (
-                      <button onClick={() => setVista('historial')} className="w-full mt-4 py-4 bg-gray-800 hover:bg-gray-900 text-white text-lg font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors">
-                        Cerrar Vista Previa
+                      <button onClick={() => setVista('historial')} className="w-full mt-4 flex justify-center items-center gap-2 py-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors">
+                        <span className="material-symbols-outlined">arrow_back</span> Regresar al Historial
                       </button>
                     )
                 ) : (
                     !examenTerminado ? (
-                      <button onClick={() => setExamenTerminado(true)} disabled={Object.keys(respuestasUsuario).length < examenActivo.preguntas_json.length} className={`w-full mt-4 py-4 text-xl font-extrabold text-white border-none rounded-xl shadow-lg transition-all ${Object.keys(respuestasUsuario).length < examenActivo.preguntas_json.length ? 'bg-gray-400 cursor-not-allowed opacity-60' : 'bg-green-600 hover:bg-green-700 cursor-pointer'}`}>
-                        Entregar Evaluación
+                      <button onClick={() => setExamenTerminado(true)} disabled={Object.keys(respuestasUsuario).length < examenActivo.preguntas_json.length} className={`w-full mt-4 py-4 text-lg font-bold text-white border-none rounded-xl shadow-md transition-all flex justify-center items-center gap-2 ${Object.keys(respuestasUsuario).length < examenActivo.preguntas_json.length ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
+                        <span className="material-symbols-outlined">send</span> Entregar Evaluación
                       </button>
                     ) : (
-                      <button onClick={() => setVista('panel_estudiante')} className="w-full mt-4 py-4 bg-gray-800 hover:bg-gray-900 text-white text-lg font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors">
-                        Volver a mis Evaluaciones
+                      <button onClick={() => setVista('panel_estudiante')} className="w-full mt-4 flex justify-center items-center gap-2 py-4 bg-gray-800 hover:bg-gray-900 text-white font-bold border-none rounded-xl cursor-pointer shadow-md transition-colors">
+                        <span className="material-symbols-outlined">home</span> Volver al Panel Principal
                       </button>
                     )
                 )}
