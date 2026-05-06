@@ -10,8 +10,12 @@ function EvaluacionesIA() {
   const [listaHistorial, setListaHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   
-  // Estado para el menú desplegable del avatar
+  // Estados para UI
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
+  
+  // --- NUEVOS ESTADOS PARA MODALES ---
+  const [modalPublicar, setModalPublicar] = useState({ abierto: false, id: null });
+  const [modalAlertaEdicion, setModalAlertaEdicion] = useState(false);
 
   // Estados del generador
   const [archivo, setArchivo] = useState(null);
@@ -89,10 +93,15 @@ function EvaluacionesIA() {
     finally { setCargando(false); }
   };
 
-  const publicarCuestionario = async (id) => {
-    if (!window.confirm("⚠️ ¿Publicar este examen a los estudiantes?")) return;
+  // Lógica actualizada para mostrar el Modal en vez de window.confirm
+  const abrirModalPublicar = (id) => {
+    setModalPublicar({ abierto: true, id: id });
+  };
+
+  const confirmarPublicacion = async () => {
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/publicar`, { method: "PUT" });
+      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${modalPublicar.id}/publicar`, { method: "PUT" });
+      setModalPublicar({ abierto: false, id: null });
       cargarHistorial(); 
     } catch (err) { console.error(err); }
   };
@@ -161,20 +170,59 @@ function EvaluacionesIA() {
     );
   }
 
-  // 2. SHELL DE LA APLICACIÓN (NUEVO DISEÑO)
+  // 2. SHELL DE LA APLICACIÓN
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-sans text-gray-800">
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-sans text-gray-800 relative">
       
+      {/* --- MODAL PARA PUBLICAR CUESTIONARIO --- */}
+      {modalPublicar.abierto && (
+        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden transform transition-all">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
+              <span className="material-symbols-outlined text-blue-600 text-2xl">rocket_launch</span>
+            </div>
+            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Publicar Evaluación?</h3>
+            <p className="text-center text-gray-500 mb-8">
+              Una vez publicado, este cuestionario será visible para tus estudiantes y <strong className="text-gray-700">no podrá ser editado</strong> mientras esté en vivo.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setModalPublicar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors">
+                Cancelar
+              </button>
+              <button onClick={confirmarPublicacion} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md">
+                Sí, Publicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE ALERTA DE EDICIÓN --- */}
+      {modalAlertaEdicion && (
+        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative overflow-hidden transform transition-all text-center">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
+              <span className="material-symbols-outlined text-yellow-600 text-3xl">lock</span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Examen Bloqueado</h3>
+            <p className="text-gray-500 mb-6 text-sm">
+              No puedes editar un cuestionario que ya está publicado para los estudiantes. Para hacer cambios, primero debes <strong className="text-gray-700">Ocultarlo</strong> desde tu Panel de Control.
+            </p>
+            <button onClick={() => setModalAlertaEdicion(false)} className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl cursor-pointer transition-colors">
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* --- NAVBAR SUPERIOR --- */}
       <nav className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-md z-50 flex items-center justify-between px-8 border-b border-gray-200">
-        {/* LOGO CENTRADO CON EL RESTO */}
         <div className="flex items-center gap-8">
           <span className="text-2xl font-extrabold text-blue-700 tracking-tight cursor-pointer" onClick={() => setVista(rol === 'docente' ? 'dashboard' : 'panel_estudiante')}>
             QuizAI
           </span>
         </div>
 
-        {/* BOTONES DERECHA */}
         <div className="flex items-center gap-5">
           <button className="text-gray-500 hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-none flex items-center justify-center p-2 rounded-full hover:bg-gray-100">
             <span className="material-symbols-outlined">notifications</span>
@@ -183,7 +231,6 @@ function EvaluacionesIA() {
             <span className="material-symbols-outlined">help</span>
           </button>
 
-          {/* MENÚ DESPLEGABLE DEL USUARIO */}
           <div className="relative">
             <img 
               onClick={() => setMenuUsuarioAbierto(!menuUsuarioAbierto)}
@@ -221,7 +268,6 @@ function EvaluacionesIA() {
                 <button onClick={() => setVista('dashboard')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'dashboard' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
                   <span className="material-symbols-outlined">dashboard</span> Dashboard
                 </button>
-                {/* Botón directo a crear cuestionario como pediste */}
                 <button onClick={() => setVista('nuevo')} className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer border-none text-left ${vista === 'nuevo' ? 'bg-white text-blue-700 shadow-sm font-bold' : 'bg-transparent text-gray-600 hover:bg-gray-200'}`}>
                   <span className="material-symbols-outlined">add_circle</span> Crear Cuestionario
                 </button>
@@ -244,69 +290,21 @@ function EvaluacionesIA() {
         <main className="ml-0 md:ml-64 flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)]">
           <div className="max-w-6xl mx-auto">
 
-            {/* VISTA 1: DASHBOARD (MOCKUP DEL HTML QUE MANDASTE) */}
+            {/* VISTA 1: DASHBOARD SIMPLIFICADO */}
             {vista === 'dashboard' && (
-              <div>
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-500 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Analítica del Curso</span>
-                      <span className="material-symbols-outlined text-xs">chevron_right</span>
-                      <span className="text-xs font-bold uppercase tracking-wider">Biología 101</span>
-                    </div>
-                    <h1 className="text-4xl font-bold tracking-tight text-gray-900">Biología Molecular Básica</h1>
-                    <p className="text-gray-500 mt-2 max-w-lg">Análisis de rendimiento a profundidad para la evaluación parcial.</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 border-none cursor-pointer transition-colors">
-                      <span className="material-symbols-outlined text-sm">mail</span> Enviar Recordatorios
-                    </button>
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 border-none cursor-pointer transition-colors">
-                      <span className="material-symbols-outlined text-sm">picture_as_pdf</span> Exportar PDF
-                    </button>
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 border-none cursor-pointer transition-colors">
-                      <span className="material-symbols-outlined text-sm">download</span> Descargar Reporte
-                    </button>
-                  </div>
-                </header>
+              <div className="flex flex-col items-center justify-center pt-32 text-center">
+                <span className="material-symbols-outlined text-6xl text-gray-300 mb-4 animate-pulse">construction</span>
+                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
+                <p className="text-gray-500 max-w-md">Esta sección de analíticas se encuentra en desarrollo. Próximamente podrás ver las métricas de tus clases aquí.</p>
+              </div>
+            )}
 
-                <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="p-2 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">grade</span></span>
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">+4.2%</span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">84.5%</div>
-                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Puntaje Promedio</div>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="p-2 bg-green-50 text-green-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">check_circle</span></span>
-                      <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">Meta 90%</span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">92%</div>
-                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Tasa de Finalización</div>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="p-2 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">timer</span></span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">14m 20s</div>
-                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Tiempo Promedio</div>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="p-2 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined">groups</span></span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">148</div>
-                    <div className="text-xs uppercase tracking-widest text-gray-400 font-bold mt-1">Participantes</div>
-                  </div>
-                </section>
-
-                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center mt-10">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Gráficas en construcción</h3>
-                  <p className="text-gray-500">Esta sección se conectará con los datos de tus estudiantes en las próximas actualizaciones.</p>
-                </section>
+            {/* VISTA: CLASES EN CONSTRUCCIÓN */}
+            {vista === 'clases' && (
+              <div className="flex flex-col items-center justify-center pt-32 text-center">
+                <span className="material-symbols-outlined text-6xl text-gray-300 mb-4 animate-pulse">construction</span>
+                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
+                <p className="text-gray-500">La gestión de clases llegará en las próximas actualizaciones.</p>
               </div>
             )}
 
@@ -338,7 +336,7 @@ function EvaluacionesIA() {
                   
                   <button onClick={generarCuestionario} disabled={cargando} className={`w-full py-4 px-6 text-lg font-bold text-white border-none rounded-xl shadow-md transition-all flex justify-center items-center gap-2 ${cargando ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
                     {cargando ? <span className="material-symbols-outlined animate-spin">sync</span> : <span className="material-symbols-outlined">auto_awesome</span>}
-                    {cargando ? "Analizando PDF e IA trabajando..." : "Generar Examen Mágico"}
+                    {cargando ? "Analizando PDF e IA trabajando..." : "Generar Examen"}
                   </button>
                 </div>
                 {error && <div className="text-red-700 p-4 bg-red-50 rounded-lg mt-4 border border-red-200 flex items-center gap-2"><span className="material-symbols-outlined">error</span> {error}</div>}
@@ -373,12 +371,12 @@ function EvaluacionesIA() {
                       <button onClick={() => iniciarExamen(registro)} className="flex items-center gap-2 py-2 px-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">visibility</span> Vista Previa</button>
                       <button onClick={() => exportarExamen(registro)} className="flex items-center gap-2 py-2 px-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">download</span> Exportar Txt</button>
                       
-                      <div className="flex-1"></div> {/* Separador flexible */}
+                      <div className="flex-1"></div> 
 
                       {registro.publicado ? (
                         <button onClick={() => despublicarCuestionario(registro.id)} className="flex items-center gap-2 py-2 px-4 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer font-bold transition-colors text-sm"><span className="material-symbols-outlined text-[18px]">visibility_off</span> Ocultar a Alumnos</button>
                       ) : (
-                        <button onClick={() => publicarCuestionario(registro.id)} className="flex items-center gap-2 py-2 px-4 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">rocket_launch</span> Publicar a Alumnos</button>
+                        <button onClick={() => abrirModalPublicar(registro.id)} className="flex items-center gap-2 py-2 px-4 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm"><span className="material-symbols-outlined text-[18px]">rocket_launch</span> Publicar a Alumnos</button>
                       )}
                       
                       <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2 py-2 px-3 bg-transparent text-gray-400 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors" title="Eliminar"><span className="material-symbols-outlined">delete</span></button>
@@ -418,9 +416,21 @@ function EvaluacionesIA() {
                     </span>
                     <h2 className="text-3xl font-extrabold text-gray-900 m-0">{examenActivo.nombre_documento}</h2>
                   </div>
+                  
+                  {/* BOTÓN DE EDITAR CON LÓGICA DE BLOQUEO */}
                   {rol === 'docente' && !modoEdicion && (
-                    <button onClick={() => setModoEdicion(true)} className="flex items-center gap-2 py-2 px-5 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-bold border border-yellow-200 rounded-xl cursor-pointer transition-colors shadow-sm">
-                      <span className="material-symbols-outlined text-[20px]">edit</span> Editar Cuestionario
+                    <button 
+                      onClick={() => {
+                        if (examenActivo.publicado) {
+                          setModalAlertaEdicion(true);
+                        } else {
+                          setModoEdicion(true);
+                        }
+                      }} 
+                      className={`flex items-center gap-2 py-2 px-5 font-bold border rounded-xl cursor-pointer transition-colors shadow-sm ${examenActivo.publicado ? 'bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200' : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border-yellow-200'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">{examenActivo.publicado ? 'lock' : 'edit'}</span> 
+                      {examenActivo.publicado ? 'Edición Bloqueada' : 'Editar Cuestionario'}
                     </button>
                   )}
                 </div>
