@@ -148,6 +148,15 @@ function EvaluacionesIA() {
     } catch (error) { alert("❌ " + error.message); }
   };
 
+  // --- LÓGICA DE VISTA PREVIA (DOCENTE) ---
+  const iniciarExamen = (registro) => {
+    setExamenActivo(registro); 
+    setRespuestasUsuario({}); 
+    setExamenTerminado(false); 
+    setModoEdicion(false);
+    setVista('examen'); 
+  };
+
   // --- LÓGICA DEL ESTUDIANTE ---
   const intentarIniciarExamen = (registro) => {
     setModalConfirmarInicio({ abierto: true, registro: registro });
