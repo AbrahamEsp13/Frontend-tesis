@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VistaCrearExamen from '../components/dashboard/VistaCrearExamen'; 
+import VistaHistorialDocente from '../components/dashboard/VistaHistorialDocente'; 
+import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';   
 
 function EvaluacionesIA() {
   const navigate = useNavigate();
@@ -437,67 +439,27 @@ function EvaluacionesIA() {
               />
             )}
 
+            {/* VISTA 3: HISTORIAL DEL DOCENTE */}
             {vista === 'historial' && rol === 'docente' && (
-              <div>
-                <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                  <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
-                    <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes.</p>
-                  </div>
-                  <button onClick={() => setVista('nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-7 rounded-2xl shadow-lg shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2 border-none outline-none text-base">
-                    ✨ Crear Nuevo
-                  </button>
-                </div>
-
-                {cargandoHistorial ? (
-                  <div className="flex flex-col items-center gap-4 text-gray-500 font-bold p-20 justify-center bg-white rounded-3xl border border-gray-100"><span className="material-symbols-outlined animate-spin text-5xl">sync</span> Cargando tus documentos...</div>
-                ) : listaHistorial.map((registro) => (
-                  <div key={registro.id} className={`bg-white border ${registro.publicado ? 'border-green-100 border-l-4 border-l-green-500' : 'border-yellow-100 border-l-4 border-l-yellow-400'} p-7 rounded-2xl mb-5 shadow-sm hover:shadow-md transition-shadow`}>
-                    <div className="flex justify-between items-start mb-2 gap-4">
-                      <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-gray-300">description</span> {registro.nombre_documento}
-                      </h3>
-                      <span className={`text-xs px-3.5 py-2 rounded-full font-bold flex items-center gap-1.5 border whitespace-nowrap ${registro.publicado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                        {registro.publicado ? <><span className="material-symbols-outlined text-[15px]">check_circle</span> Publicado</> : <><span className="material-symbols-outlined text-[15px]">edit_document</span> Borrador</>}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-6 flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px]">calendar_today</span> Creado el: {new Date(registro.fecha_creacion).toLocaleDateString()}</p>
-
-                    <div className="flex gap-3.5 flex-wrap items-center bg-gray-50/50 p-3.5 rounded-xl border border-gray-100">
-                      <button onClick={() => iniciarExamen(registro)} className="flex items-center gap-2 py-2.5 px-4.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none"><span className="material-symbols-outlined text-[19px]">visibility</span> Vista Previa Docente</button>
-                      <button onClick={() => exportarExamen(registro)} className="flex items-center gap-2 py-2.5 px-4.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none"><span className="material-symbols-outlined text-[19px]">download</span> Exportar Txt</button>
-                      
-                      <div className="flex-1"></div> 
-
-                      {registro.publicado ? (
-                        <button onClick={() => despublicarCuestionario(registro.id)} className="flex items-center gap-2.5 py-2.5 px-5 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer font-bold transition-colors text-sm outline-none"><span className="material-symbols-outlined text-[19px]">visibility_off</span> Ocultar a Alumnos</button>
-                      ) : (
-                        <button onClick={() => abrirModalPublicar(registro.id)} className="flex items-center gap-2.5 py-2.5 px-5 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none"><span className="material-symbols-outlined text-[19px]">rocket_launch</span> Publicar a Alumnos</button>
-                      )}
-                      
-                      <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2.5 py-2.5 px-4 bg-transparent text-gray-300 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors outline-none" title="Eliminar"><span className="material-symbols-outlined text-[20px]">delete</span></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <VistaHistorialDocente 
+                listaHistorial={listaHistorial}
+                cargandoHistorial={cargandoHistorial}
+                setVista={setVista}
+                iniciarExamen={iniciarExamen}
+                exportarExamen={exportarExamen}
+                despublicarCuestionario={despublicarCuestionario}
+                abrirModalPublicar={abrirModalPublicar}
+                eliminarExamen={eliminarExamen}
+              />
             )}
 
+            {/* VISTA 4: PANEL DEL ESTUDIANTE */}
             {vista === 'panel_estudiante' && rol === 'estudiante' && (
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">🎓 Evaluaciones Disponibles</h2>
-                <p className="text-gray-500 mb-8 max-w-xl">A continuación encontrarás las evaluaciones publicadas por tus docentes. Selecciona una para comenzar. ¡Mucho éxito!</p>
-                {cargandoHistorial ? <div className="flex flex-col items-center gap-4 text-gray-500 font-bold p-20 justify-center bg-white rounded-3xl border border-gray-100 shadow-sm"><span className="material-symbols-outlined animate-spin text-5xl">sync</span> Buscando evaluaciones...</div> : listaHistorial.length === 0 ? <div className="bg-white border p-10 rounded-3xl shadow-sm text-center border-gray-100"><span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block animate-pulse">inbox</span><p className="text-gray-500 font-medium m-0 max-w-sm mx-auto">No hay exámenes publicados por tus maestros en este momento. Vuelve a intentarlo más tarde.</p></div> : listaHistorial.map((registro) => (
-                  <div key={registro.id} className="bg-white border border-blue-100 p-8 rounded-2xl mb-5 shadow-lg shadow-blue-500/5 transition-transform hover:-translate-y-1">
-                    <div className="flex justify-between items-center mb-5 gap-4">
-                      <h3 className="m-0 text-2xl font-bold text-blue-800 flex items-center gap-3 leading-tight"><span className="material-symbols-outlined text-3xl">assignment</span> Evaluación: {registro.nombre_documento}</h3>
-                      <span className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-bold border border-blue-100 whitespace-nowrap">{registro.preguntas_json.length} Preguntas</span>
-                    </div>
-                    <button onClick={() => intentarIniciarExamen(registro)} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white border-none rounded-xl cursor-pointer font-bold text-xl shadow-md transition-colors flex justify-center items-center gap-2 outline-none">
-                      <span className="material-symbols-outlined text-2xl">play_circle</span> Iniciar Evaluación
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <VistaPanelEstudiante 
+                listaHistorial={listaHistorial}
+                cargandoHistorial={cargandoHistorial}
+                intentarIniciarExamen={intentarIniciarExamen}
+              />
             )}
 
             {vista === 'examen' && examenActivo && (
