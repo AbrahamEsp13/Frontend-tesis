@@ -216,6 +216,13 @@ function EvaluacionesIA() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const reiniciarExamen = () => {
+    if (!window.confirm("¿Seguro que quieres volver a intentar? Se borrarán tus resultados actuales.")) return;
+    setRespuestasUsuario({});
+    setExamenTerminado(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const modoExamenActivo = vista === 'examen' && examenActivo && !examenTerminado && rol === 'estudiante';
 
   // ==========================================
@@ -441,6 +448,7 @@ function EvaluacionesIA() {
                 intentarEntregarEvaluacion={intentarEntregarEvaluacion}
                 salirDelExamen={salirDelExamen}
                 modoExamenActivo={modoExamenActivo}
+                reiniciarExamen={reiniciarExamen}
               />
             )}
 

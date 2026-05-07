@@ -18,13 +18,14 @@ function VistaExamen({
   setVista,
   intentarEntregarEvaluacion,
   salirDelExamen,
-  modoExamenActivo
+  modoExamenActivo,
+  reiniciarExamen // <-- NUEVA PROP
 }) {
   return (
     <div className={`text-left ${modoExamenActivo ? 'bg-transparent' : 'bg-white p-10 rounded-3xl shadow-sm border border-gray-200'}`}>
       
-      {/* CABECERA DINÁMICA */}
-      {!modoExamenActivo && (
+      {/* CABECERA DINÁMICA (SÓLO VISIBLE PARA DOCENTES) */}
+      {rol === 'docente' && !modoExamenActivo && (
         <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-6">
           <div>
             <span className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-1 block">
@@ -33,8 +34,7 @@ function VistaExamen({
             <h2 className="text-3xl font-extrabold text-gray-900 m-0">{examenActivo.nombre_documento}</h2>
           </div>
           
-          {/* BOTÓN DE EDITAR (SÓLO VISIBLE PARA EL DOCENTE) */}
-          {rol === 'docente' && !modoEdicion && (
+          {!modoEdicion && (
             <button 
               onClick={() => {
                 if (examenActivo.publicado) {
@@ -54,8 +54,8 @@ function VistaExamen({
 
       {/* RETROALIMENTACIÓN FINAL */}
       {examenTerminado && (
-        <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 mb-10">
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+        <div className="bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-gray-100 mb-10">
+          <header className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-2">
             <div>
               <div className="flex items-center gap-2 text-blue-600 mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider">Resultados Obtenidos</span>
@@ -65,11 +65,34 @@ function VistaExamen({
               <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 m-0">{examenActivo.nombre_documento}</h1>
               <p className="text-gray-500 mt-2.5 max-w-lg">Revisa tus aciertos, errores y la retroalimentación basada en el material de estudio proporcionado.</p>
             </div>
-            <div className="text-right">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest block mb-1">Tu Puntuación</span>
-              <div className='flex items-end justify-end gap-1.5'>
-                <span className="text-6xl font-extrabold text-blue-700 leading-none">{calcularCalificacion()}</span>
-                <span className="text-3xl font-extrabold text-blue-200 pb-1">/ {examenActivo.preguntas_json.length}</span>
+            
+            {/* CONTENEDOR DERECHO: BOTONES Y PUNTUACIÓN */}
+            <div className="flex flex-col items-end gap-6">
+              
+              {/* NUEVOS BOTONES ESTILO IMAGEN */}
+              {rol === 'estudiante' && (
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => alert("El visor del PDF original estará disponible en la próxima actualización del sistema.")}
+                    className="px-5 py-2.5 bg-white border border-gray-200 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors text-sm shadow-sm outline-none cursor-pointer"
+                  >
+                    Ver documento
+                  </button>
+                  <button 
+                    onClick={reiniciarExamen}
+                    className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md text-sm outline-none cursor-pointer"
+                  >
+                    Volver a intentar
+                  </button>
+                </div>
+              )}
+
+              <div className="text-right mt-2">
+                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest block mb-1">Tu Puntuación</span>
+                <div className='flex items-end justify-end gap-1.5'>
+                  <span className="text-6xl font-extrabold text-blue-700 leading-none">{calcularCalificacion()}</span>
+                  <span className="text-3xl font-extrabold text-blue-200 pb-1">/ {examenActivo.preguntas_json.length}</span>
+                </div>
               </div>
             </div>
           </header>
