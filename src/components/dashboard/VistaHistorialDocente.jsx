@@ -1,73 +1,120 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-function VistaHistorialDocente({
-  listaHistorial,
-  cargandoHistorial,
-  setVista,
-  iniciarExamen,
-  exportarExamen,
-  despublicarCuestionario,
-  abrirModalPublicar,
-  eliminarExamen
-}) {
+const HistorialCuestionarios = () => {
+  const [cuestionarios, setCuestionarios] = useState([]);
+  const [modalEliminar, setModalEliminar] = useState({ visible: false, id: null });
+  const [modalExito, setModalExito] = useState({ visible: false, mensaje: '' });
+
+  const fetchCuestionarios = async () => {
+    const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
+    const response = await fetch(`http://localhost:8000/api/cuestionarios?usuario_id=${usuario.id}&rol=docente`);
+    const data = await response.json();
+    if (data.status === 'success') setCuestionarios(data.data);
+  };
+
+  useEffect(() => { fetchCuestionarios(); }, []);
+
+  const abrirConfirmacion = (id) => {
+    setModalEliminar({ visible: true, id: id });
+  };
+
+  const ejecutarEliminacion = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/cuestionarios/${modalEliminar.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setModalEliminar({ visible: false, id: null });
+        setModalExito({ visible: true, mensaje: 'El cuestionario ha sido borrado permanentemente.' });
+        fetchCuestionarios();
+      }
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+    }
+  };
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
-          <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes.</p>
-        </div>
-        <button onClick={() => setVista('nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-7 rounded-2xl shadow-lg shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2 border-none outline-none text-base">
-          ✨ Crear Nuevo
-        </button>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Historial de Exámenes</h2>
+      
+      <div className="overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="p-4 font-bold text-gray-600 text-sm">Documento</th>
+              <th className="p-4 font-bold text-gray-600 text-sm text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cuestionarios.map((quiz) => (
+              <tr key={quiz.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <td className="p-4 text-gray-700 font-medium">{quiz.nombre_documento}</td>
+                <td className="p-4 flex justify-center gap-3">
+                  <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <span className="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button 
+                    onClick={() => abrirConfirmacion(quiz.id)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {cargandoHistorial ? (
-        <div className="flex flex-col items-center gap-4 text-gray-500 font-bold p-20 justify-center bg-white rounded-3xl border border-gray-100">
-          <span className="material-symbols-outlined animate-spin text-5xl">sync</span> Cargando tus documentos...
-        </div>
-      ) : listaHistorial.map((registro) => (
-        <div key={registro.id} className={`bg-white border ${registro.publicado ? 'border-green-100 border-l-4 border-l-green-500' : 'border-yellow-100 border-l-4 border-l-yellow-400'} p-7 rounded-2xl mb-5 shadow-sm hover:shadow-md transition-shadow`}>
-          <div className="flex justify-between items-start mb-2 gap-4">
-            <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="material-symbols-outlined text-gray-300">description</span> {registro.nombre_documento}
-            </h3>
-            <span className={`text-xs px-3.5 py-2 rounded-full font-bold flex items-center gap-1.5 border whitespace-nowrap ${registro.publicado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-              {registro.publicado ? <><span className="material-symbols-outlined text-[15px]">check_circle</span> Publicado</> : <><span className="material-symbols-outlined text-[15px]">edit_document</span> Borrador</>}
-            </span>
-          </div>
-          <p className="text-sm text-gray-500 mb-6 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">calendar_today</span> Creado el: {new Date(registro.fecha_creacion).toLocaleDateString()}
-          </p>
-
-          <div className="flex gap-3.5 flex-wrap items-center bg-gray-50/50 p-3.5 rounded-xl border border-gray-100">
-            <button onClick={() => iniciarExamen(registro)} className="flex items-center gap-2 py-2.5 px-4.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none">
-              <span className="material-symbols-outlined text-[19px]">visibility</span> Vista Previa Docente
-            </button>
-            <button onClick={() => exportarExamen(registro)} className="flex items-center gap-2 py-2.5 px-4.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none">
-              <span className="material-symbols-outlined text-[19px]">download</span> Exportar Txt
-            </button>
-            
-            <div className="flex-1"></div> 
-
-            {registro.publicado ? (
-              <button onClick={() => despublicarCuestionario(registro.id)} className="flex items-center gap-2.5 py-2.5 px-5 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer font-bold transition-colors text-sm outline-none">
-                <span className="material-symbols-outlined text-[19px]">visibility_off</span> Ocultar a Alumnos
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINAR */}
+      {modalEliminar.visible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-red-600 text-5xl">warning</span>
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-3">¿Estás seguro?</h3>
+              <p className="text-gray-500 leading-relaxed">
+                Esta acción eliminará el cuestionario y los resultados de los alumnos. No se puede deshacer.
+              </p>
+            </div>
+            <div className="p-6 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setModalEliminar({ visible: false, id: null })}
+                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
               </button>
-            ) : (
-              <button onClick={() => abrirModalPublicar(registro.id)} className="flex items-center gap-2.5 py-2.5 px-5 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none">
-                <span className="material-symbols-outlined text-[19px]">rocket_launch</span> Publicar a Alumnos
+              <button
+                onClick={ejecutarEliminacion}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-md transition-colors"
+              >
+                Sí, eliminar
               </button>
-            )}
-            
-            <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2.5 py-2.5 px-4 bg-transparent text-gray-300 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors outline-none" title="Eliminar">
-              <span className="material-symbols-outlined text-[20px]">delete</span>
-            </button>
+            </div>
           </div>
         </div>
-      ))}
+      )}
+
+      {/* MODAL DE ÉXITO TRAS ELIMINAR */}
+      {modalExito.visible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center">
+             <span className="material-symbols-outlined text-green-500 text-6xl mb-4">check_circle</span>
+             <p className="text-lg font-bold text-gray-800 mb-6">{modalExito.mensaje}</p>
+             <button 
+               onClick={() => setModalExito({ visible: false, mensaje: '' })}
+               className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold"
+             >
+               Cerrar
+             </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
-export default VistaHistorialDocente;
+export default HistorialCuestionarios;
