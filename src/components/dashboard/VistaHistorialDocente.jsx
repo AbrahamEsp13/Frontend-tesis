@@ -28,17 +28,26 @@ function VistaHistorialDocente({
         </div>
       ) : listaHistorial.map((registro) => (
         <div key={registro.id} className={`bg-white border ${registro.publicado ? 'border-green-100 border-l-4 border-l-green-500' : 'border-yellow-100 border-l-4 border-l-yellow-400'} p-7 rounded-2xl mb-5 shadow-sm hover:shadow-md transition-shadow`}>
-          <div className="flex justify-between items-start mb-2 gap-4">
-            <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="material-symbols-outlined text-gray-300">description</span> {registro.nombre_documento}
+          
+          <div className="flex justify-between items-start mb-1 gap-4">
+            {/* TÍTULO DOMINANTE: Nombre del Examen */}
+            <h3 className="m-0 text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+               {registro.nombre_examen || "Examen sin título"}
             </h3>
+            
             <span className={`text-xs px-3.5 py-2 rounded-full font-bold flex items-center gap-1.5 border whitespace-nowrap ${registro.publicado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
               {registro.publicado ? <><span className="material-symbols-outlined text-[15px]">check_circle</span> Publicado</> : <><span className="material-symbols-outlined text-[15px]">edit_document</span> Borrador</>}
             </span>
           </div>
-          <p className="text-sm text-gray-500 mb-6 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">calendar_today</span> Creado el: {new Date(registro.fecha_creacion).toLocaleDateString()}
-          </p>
+
+          {/* INFORMACIÓN SECUNDARIA: Nombre del archivo PDF y Fecha */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+            <span className="material-symbols-outlined text-[18px] text-gray-400">picture_as_pdf</span> 
+            <span className="truncate max-w-[300px]">Archivo base: {registro.nombre_documento}</span>
+            <span className="mx-2 text-gray-300">•</span>
+            <span className="material-symbols-outlined text-[18px] text-gray-400">calendar_today</span> 
+            <span>{new Date(registro.fecha_creacion).toLocaleDateString()}</span>
+          </div>
 
           <div className="flex gap-3.5 flex-wrap items-center bg-gray-50/50 p-3.5 rounded-xl border border-gray-100">
             <button onClick={() => iniciarExamen(registro)} className="flex items-center gap-2 py-2.5 px-4.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 rounded-lg cursor-pointer font-bold transition-colors shadow-sm text-sm outline-none">
