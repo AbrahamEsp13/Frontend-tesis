@@ -10,6 +10,7 @@ import VistaCrearExamen from '../components/dashboard/VistaCrearExamen';
 import VistaHistorialDocente from '../components/dashboard/VistaHistorialDocente'; 
 import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';
 import VistaExamen from '../components/dashboard/VistaExamen';
+import VistaDashboard from '../components/dashboard/VistaDashboard';
 
 function EvaluacionesIA() {
   const navigate = useNavigate();
@@ -177,7 +178,7 @@ function EvaluacionesIA() {
     document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
   };
 
-  // --- LÓGICA DE EDICIÓN ---
+  // --- LÓGICA DE EDICIÓN Y CLONADO COMUNITARIO ---
   const actualizarPregunta = (i, c, v) => { let ex = {...examenActivo}; ex.preguntas_json[i][c] = v; setExamenActivo(ex); };
   const actualizarOpcion = (qi, oi, v) => { let ex = {...examenActivo}; ex.preguntas_json[qi].opciones[oi] = v; setExamenActivo(ex); };
   const agregarPreguntaVacia = () => { let ex = {...examenActivo}; ex.preguntas_json.push({pregunta: "Nueva pregunta...", opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], respuesta_correcta: "Opción 1", justificacion_pedagogica: "..."}); setExamenActivo(ex); };
@@ -201,6 +202,23 @@ function EvaluacionesIA() {
     } catch (error) { 
       setModalInfo({ abierto: true, titulo: 'Error al Guardar', mensaje: error.message, tipo: 'error' });
     }
+  };
+
+  const clonarCuestionarioDelDashboard = (cuestionarioSeleccionado) => {
+    // 1. Mostrar la alerta de éxito simulada
+    setModalInfo({ 
+      abierto: true, 
+      titulo: '¡Examen Clonado!', 
+      mensaje: `Se ha guardado una copia de "${cuestionarioSeleccionado.titulo}" en tu historial personal. Ahora puedes editarlo sin afectar al autor original.`, 
+      tipo: 'exito' 
+    });
+    
+    // 2. Redirigir al historial para que el maestro vea su copia nueva
+    setVista('historial');
+    
+    // NOTA: Esta función es un "placeholder". 
+    // Cuando conectes tu vista comunitaria al backend, aquí enviarás el ID a tu API 
+    // para que la base de datos duplique el JSON y te lo asigne a ti con el sufijo "(Copia)".
   };
 
   // --- LÓGICA DE VISTA PREVIA (DOCENTE) ---
@@ -300,6 +318,7 @@ function EvaluacionesIA() {
       {/* ZONA DE MODALES (DOCENTE Y GENERAL)        */}
       {/* ========================================== */}
       
+      {/* 1. MODAL GENÉRICO DE INFORMACIÓN (Alertas de Éxito, Error, Warning) */}
       {modalInfo.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -323,6 +342,7 @@ function EvaluacionesIA() {
         </div>
       )}
 
+      {/* 2. MODAL CONFIRMAR ELIMINAR EXAMEN (Historial) */}
       {modalConfirmarEliminar.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
@@ -330,7 +350,7 @@ function EvaluacionesIA() {
               <span className="material-symbols-outlined text-red-600 text-3xl">delete_forever</span>
             </div>
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Eliminar Examen?</h3>
-            <p className="text-center text-gray-500 mb-8">Esta acción borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
+            <p className="text-center text-gray-500 mb-8">Esta action borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
             <div className="flex gap-3">
               <button onClick={() => setModalConfirmarEliminar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
               <button onClick={confirmarEliminacionExamen} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Eliminar</button>
@@ -339,6 +359,7 @@ function EvaluacionesIA() {
         </div>
       )}
 
+      {/* 3. MODAL CONFIRMAR ELIMINAR PREGUNTA (Modo Edición) */}
       {modalConfirmarEliminarPregunta.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -355,6 +376,7 @@ function EvaluacionesIA() {
         </div>
       )}
 
+      {/* 4. MODAL PUBLICAR EXAMEN */}
       {modalPublicar.abierto && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
@@ -371,6 +393,7 @@ function EvaluacionesIA() {
         </div>
       )}
 
+      {/* 5. MODAL ALERTA EDICIÓN */}
       {modalAlertaEdicion && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -385,7 +408,7 @@ function EvaluacionesIA() {
       )}
 
       {/* ========================================== */}
-      {/* ZONA DE MODALES (ESTUDIANTE)             */}
+      {/* ZONA DE MODALES (ESTUDIANTE)               */}
       {/* ========================================== */}
       
       {modalConfirmarInicio.abierto && modalConfirmarInicio.registro && (
@@ -504,12 +527,11 @@ function EvaluacionesIA() {
         <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)] transition-all`}>
           <div className={`${modoExamenActivo ? 'w-full' : 'max-w-6xl'} mx-auto`}>
 
-            {vista === 'dashboard' && (
-              <div className="flex flex-col items-center justify-center pt-32 text-center bg-white p-16 rounded-3xl border border-gray-100 shadow-sm">
-                <span className="material-symbols-outlined text-7xl text-gray-300 mb-5 animate-pulse">construction</span>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
-                <p className="text-gray-500 max-w-md">Esta sección de analíticas se encuentra en desarrollo. Próximamente podrás ver las métricas de tus clases aquí.</p>
-              </div>
+            {/* SECCIÓN DEL MERCADO COMUNITARIO (DASHBOARD DOCENTE) */}
+            {vista === 'dashboard' && rol === 'docente' && (
+              <VistaDashboard 
+                clonarCuestionario={clonarCuestionarioDelDashboard} 
+              />
             )}
 
             {vista === 'clases' && (
@@ -523,8 +545,8 @@ function EvaluacionesIA() {
             {/* VISTAS MODULARES */}
             {vista === 'nuevo' && rol === 'docente' && (
               <VistaCrearExamen 
-                nombreExamen={nombreExamen}         // <--- NUEVA PROP INYECTADA
-                setNombreExamen={setNombreExamen}   // <--- NUEVA PROP INYECTADA
+                nombreExamen={nombreExamen}         
+                setNombreExamen={setNombreExamen}   
                 numPreguntas={numPreguntas}
                 setNumPreguntas={setNumPreguntas}
                 setArchivo={setArchivo}
