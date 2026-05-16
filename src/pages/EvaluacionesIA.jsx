@@ -40,7 +40,8 @@ function EvaluacionesIA() {
   const [modalConfirmarReinicio, setModalConfirmarReinicio] = useState(false);
 
   // Estados del generador
-  const [nombreExamen, setNombreExamen] = useState(''); // <--- NUEVO ESTADO PARA EL NOMBRE
+  const [nombreExamen, setNombreExamen] = useState(''); 
+  const [materia, setMateria] = useState('');
   const [archivo, setArchivo] = useState(null);
   const [numPreguntas, setNumPreguntas] = useState(5);
   const [cargando, setCargando] = useState(false);
@@ -108,7 +109,8 @@ function EvaluacionesIA() {
     setCargando(true); setError(null);
     const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
     const formData = new FormData();
-    formData.append("nombre_examen", nombreExamen); // <-- ENVIAR NOMBRE AL BACKEND
+    formData.append("nombre_examen", nombreExamen); 
+    formData.append("materia", materia);
     formData.append("archivo", archivo);
     formData.append("usuario_id", usuario.id); 
     formData.append("num_preguntas", numPreguntas);
@@ -546,7 +548,9 @@ function EvaluacionesIA() {
             {vista === 'nuevo' && rol === 'docente' && (
               <VistaCrearExamen 
                 nombreExamen={nombreExamen}         
-                setNombreExamen={setNombreExamen}   
+                setNombreExamen={setNombreExamen} 
+                materia={materia}
+                setMateria={setMateria}  
                 numPreguntas={numPreguntas}
                 setNumPreguntas={setNumPreguntas}
                 setArchivo={setArchivo}
