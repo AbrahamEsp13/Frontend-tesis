@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// 1. ACEPTAR LA FUNCIÓN COMO PROP (Paso A de las instrucciones)
 function VistaDashboard({ clonarCuestionario }) {
   const [busqueda, setBusqueda] = useState('');
 
@@ -38,25 +37,25 @@ function VistaDashboard({ clonarCuestionario }) {
   return (
     <div className="max-w-6xl mx-auto text-left">
       
-      {/* --- SECCIÓN HERO Y BÚSQUEDA (AHORA EN BLANCO) --- */}
-      <div className="bg-white p-10 md:p-12 rounded-3xl border border-gray-100 shadow-sm mb-10 relative overflow-hidden">
+      {/* --- SECCIÓN HERO Y BÚSQUEDA CENTRADA --- */}
+      <div className="bg-white p-10 md:p-12 rounded-3xl border border-gray-100 shadow-sm mb-10 relative overflow-hidden text-center">
         {/* Decoración de fondo sutil */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-[0.03] pointer-events-none text-blue-900">
           <span className="material-symbols-outlined absolute -top-10 -left-10 text-[150px]">public</span>
           <span className="material-symbols-outlined absolute bottom-10 -right-10 text-[120px]">school</span>
         </div>
 
-        <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-3 text-gray-950 m-0">
+        <div className="relative z-10 flex flex-col items-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-gray-950 m-0">
             Encuentra recursos educativos al instante
           </h1>
-          <p className="text-gray-500 text-lg md:text-xl mb-10 max-w-2xl font-medium m-0 leading-relaxed">
+          <p className="text-gray-500 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-medium m-0 leading-relaxed">
             Explora cientos de cuestionarios validados por la comunidad docente. Úsalos tal como están o adáptalos a tu clase en segundos.
           </p>
 
-          {/* BARRA DE BÚSQUEDA (AJUSTADA PARA FONDO BLANCO) */}
-          <div className="max-w-3xl relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          {/* BARRA DE BÚSQUEDA CENTRADA */}
+          <div className="w-full max-w-3xl mx-auto relative group">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
               <span className="material-symbols-outlined text-gray-400 group-focus-within:text-blue-500 transition-colors text-2xl">search</span>
             </div>
             <input 
@@ -64,16 +63,16 @@ function VistaDashboard({ clonarCuestionario }) {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Ej. Álgebra lineal, Revolución Francesa, Anatomía..." 
-              className="w-full pl-12 pr-32 py-5 rounded-2xl text-gray-900 font-medium text-lg outline-none border border-gray-200 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 bg-white transition-all shadow-inner"
+              className="w-full pl-14 pr-32 py-5 rounded-2xl text-gray-900 font-medium text-lg outline-none border border-gray-200 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 bg-white transition-all shadow-sm"
             />
-            <button className="absolute inset-y-2.5 right-2.5 bg-gray-900 hover:bg-black text-white px-7 rounded-xl font-bold transition-colors shadow-sm cursor-pointer outline-none border-none text-base">
+            <button className="absolute inset-y-2 right-2 bg-gray-900 hover:bg-black text-white px-8 rounded-xl font-bold transition-colors shadow-sm cursor-pointer outline-none border-none text-base">
               Buscar
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- SECCIÓN DE DESTACADOS (IGUAL) --- */}
+      {/* --- SECCIÓN DE DESTACADOS --- */}
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 m-0">
@@ -120,7 +119,6 @@ function VistaDashboard({ clonarCuestionario }) {
                 </span>
               </div>
 
-              {/* 2. CONECTAR LA FUNCIÓN AL BOTÓN (Paso B de las instrucciones) */}
               <button 
                 onClick={() => clonarCuestionario(quiz)} 
                 className="w-full py-3.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 hover:border-blue-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer outline-none text-base"
