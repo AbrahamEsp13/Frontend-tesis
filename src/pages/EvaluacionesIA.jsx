@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// --- COMPONENTES MODULARES (LAYOUT) ---
 import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
 
-// --- COMPONENTES MODULARES (VISTAS) ---
 import VistaCrearExamen from '../components/dashboard/VistaCrearExamen'; 
 import VistaHistorialDocente from '../components/dashboard/VistaHistorialDocente'; 
 import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';
@@ -14,43 +12,35 @@ import VistaExamen from '../components/dashboard/VistaExamen';
 function EvaluacionesIA() {
   const navigate = useNavigate();
 
-  // --- ESTADOS DE SESIÓN Y VISTAS ---
   const [rol, setRol] = useState(null);
   const [vista, setVista] = useState('inicio'); 
   const [listaHistorial, setListaHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
-  
-  // Estados para UI general
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   
-  // --- ESTADOS PARA MODALES (DOCENTE Y GENERAL) ---
+  // Modales de control de UI
   const [modalPublicar, setModalPublicar] = useState({ abierto: false, id: null });
   const [modalAlertaEdicion, setModalAlertaEdicion] = useState(false);
-
-  // NUEVOS ESTADOS PARA REEMPLAZAR ALERTS Y CONFIRMS
   const [modalInfo, setModalInfo] = useState({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' });
   const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState({ abierto: false, id: null });
   const [modalConfirmarEliminarPregunta, setModalConfirmarEliminarPregunta] = useState({ abierto: false, index: null });
-
-  // --- ESTADOS PARA MODALES (ESTUDIANTE) ---
   const [modalConfirmarInicio, setModalConfirmarInicio] = useState({ abierto: false, registro: null });
   const [modalAdvertenciaSalida, setModalAdvertenciaSalida] = useState(false);
   const [modalConfirmarEntrega, setModalConfirmarEntrega] = useState(false);
   const [modalConfirmarReinicio, setModalConfirmarReinicio] = useState(false);
 
-  // Estados del generador
+  // Estados de los datos del cuestionario
+  const [nombreExamen, setNombreExamen] = useState(''); // <-- NUEVO ESTADO
   const [archivo, setArchivo] = useState(null);
   const [numPreguntas, setNumPreguntas] = useState(5);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estados del Examen
   const [examenActivo, setExamenActivo] = useState(null);
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [examenTerminado, setExamenTerminado] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // --- EFECTOS INICIALES ---
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuarioQuizAI");
     if (usuarioGuardado) {
@@ -68,10 +58,7 @@ function EvaluacionesIA() {
 
   const cerrarSesion = () => {
     localStorage.removeItem("usuarioQuizAI"); 
-    navigate('/'); 
-    setRol(null); 
-    setExamenActivo(null); 
-    setMenuUsuarioAbierto(false);
+    navigate('/'); setRol(null); setExamenActivo(null); setMenuUsuarioAbierto(false);
   };
 
   const cargarHistorial = async () => {
@@ -83,7 +70,6 @@ function EvaluacionesIA() {
       
       const url = `https://backend-tesis-x187.onrender.com/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
       const respuesta = await fetch(url);
-      if (!respuesta.ok) throw new Error("Fallo en servidor");
       const resultado = await respuesta.json();
       setListaHistorial(resultado.data || []); 
     } catch (err) {
@@ -93,32 +79,35 @@ function EvaluacionesIA() {
     }
   };
 
-  // --- LÓGICA DEL DOCENTE ---
   const generarCuestionario = async () => {
-    if (!archivo) {
-      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, selecciona un archivo PDF primero.', tipo: 'warning' });
+    if (!nombreExamen.trim()) {
+      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, asigna un título al examen antes de continuar.', tipo: 'warning' });
       return;
     }
+    if (!archivo) {
+      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, selecciona un archivo PDF.', tipo: 'warning' });
+      return;
+    }
+
     setCargando(true); setError(null);
     const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
     const formData = new FormData();
+    formData.append("nombre_examen", nombreExamen); // <-- ENVIAR NOMBRE
     formData.append("archivo", archivo);
     formData.append("usuario_id", usuario.id); 
     formData.append("num_preguntas", numPreguntas);
 
     try {
       const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData });
-      if (!respuesta.ok) throw new Error("Fallo en el servidor.");
+      if (!respuesta.ok) throw new Error("Error en el servidor backend.");
       
-      // Reemplazo de alert exitoso
-      setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
-      
+      setModalInfo({ abierto: true, titulo: '¡Éxito!', mensaje: 'Cuestionario generado correctamente.', tipo: 'exito' });
+      setNombreExamen(''); 
       setArchivo(null);
       setVista('historial'); 
       cargarHistorial(); 
     } catch (err) { 
-      // Reemplazo de setError/alert de error
-      setModalInfo({ abierto: true, titulo: 'Error en la Generación', mensaje: err.message, tipo: 'error' });
+      setModalInfo({ abierto: true, titulo: 'Error', mensaje: err.message, tipo: 'error' });
     } finally { 
       setCargando(false); 
     }
@@ -140,10 +129,7 @@ function EvaluacionesIA() {
     } catch (err) { console.error(err); }
   };
 
-  // Reemplazo del window.confirm para eliminar examen
-  const eliminarExamen = (id) => {
-    setModalConfirmarEliminar({ abierto: true, id: id });
-  };
+  const eliminarExamen = (id) => { setModalConfirmarEliminar({ abierto: true, id: id }); };
 
   const confirmarEliminacionExamen = async () => {
     const id = modalConfirmarEliminar.id;
@@ -151,14 +137,15 @@ function EvaluacionesIA() {
     try {
       await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}`, { method: 'DELETE' });
       cargarHistorial(); 
-      setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'El examen fue borrado permanentemente de tu historial.', tipo: 'exito' });
+      setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'Eliminado correctamente de tu historial y base de datos.', tipo: 'exito' });
     } catch (err) { 
-      setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo eliminar el examen.', tipo: 'error' });
+      setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo eliminar.', tipo: 'error' });
     }
   };
 
   const exportarExamen = (registro) => {
-    let contenido = `📝 EXAMEN: ${registro.nombre_documento}\nGenerado por QuizAI\n========================\n\n`;
+    let titulo = registro.nombre_examen || registro.nombre_documento;
+    let contenido = `📝 EXAMEN: ${titulo}\nGenerado por QuizAI\n========================\n\n`;
     registro.preguntas_json.forEach((p, index) => {
       contenido += `${index + 1}. ${p.pregunta}\n`;
       p.opciones.forEach(op => { contenido += `   [  ] ${op}\n`; });
@@ -167,23 +154,17 @@ function EvaluacionesIA() {
     const blob = new Blob([contenido], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement('a');
-    enlace.href = url; enlace.download = `Clave_${registro.nombre_documento}.txt`;
+    enlace.href = url; enlace.download = `Clave_${titulo}.txt`;
     document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
   };
 
-  // --- LÓGICA DE EDICIÓN ---
   const actualizarPregunta = (i, c, v) => { let ex = {...examenActivo}; ex.preguntas_json[i][c] = v; setExamenActivo(ex); };
   const actualizarOpcion = (qi, oi, v) => { let ex = {...examenActivo}; ex.preguntas_json[qi].opciones[oi] = v; setExamenActivo(ex); };
   const agregarPreguntaVacia = () => { let ex = {...examenActivo}; ex.preguntas_json.push({pregunta: "Nueva pregunta...", opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], respuesta_correcta: "Opción 1", justificacion_pedagogica: "..."}); setExamenActivo(ex); };
   
-  // Reemplazo del window.confirm para borrar pregunta individual
-  const eliminarPregunta = (index) => { 
-    setModalConfirmarEliminarPregunta({ abierto: true, index: index });
-  };
+  const eliminarPregunta = (index) => { setModalConfirmarEliminarPregunta({ abierto: true, index: index }); };
   const confirmarEliminarPregunta = () => {
-    let ex = {...examenActivo}; 
-    ex.preguntas_json.splice(modalConfirmarEliminarPregunta.index, 1); 
-    setExamenActivo(ex);
+    let ex = {...examenActivo}; ex.preguntas_json.splice(modalConfirmarEliminarPregunta.index, 1); setExamenActivo(ex);
     setModalConfirmarEliminarPregunta({ abierto: false, index: null });
   }
 
@@ -191,58 +172,32 @@ function EvaluacionesIA() {
     try {
       await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${examenActivo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json }) });
       setModalInfo({ abierto: true, titulo: '¡Cambios Guardados!', mensaje: 'El examen se ha actualizado correctamente.', tipo: 'exito' });
-      setModoEdicion(false); 
-      cargarHistorial(); 
+      setModoEdicion(false); cargarHistorial(); 
     } catch (error) { 
       setModalInfo({ abierto: true, titulo: 'Error al Guardar', mensaje: error.message, tipo: 'error' });
     }
   };
 
-  // --- LÓGICA DE VISTA PREVIA (DOCENTE) ---
   const iniciarExamen = (registro) => {
-    setExamenActivo(registro); 
-    setRespuestasUsuario({}); 
-    setExamenTerminado(false); 
-    setModoEdicion(false);
-    setVista('examen'); 
+    setExamenActivo(registro); setRespuestasUsuario({}); setExamenTerminado(false); setModoEdicion(false); setVista('examen'); 
   };
 
-  // --- LÓGICA DEL ESTUDIANTE ---
-  const intentarIniciarExamen = (registro) => {
-    setModalConfirmarInicio({ abierto: true, registro: registro });
-  };
-
+  const intentarIniciarExamen = (registro) => { setModalConfirmarInicio({ abierto: true, registro: registro }); };
   const confirmarInicioExamen = () => {
     const registro = modalConfirmarInicio.registro;
-    setExamenActivo(registro); 
-    setRespuestasUsuario({}); 
-    setExamenTerminado(false); 
-    setModoEdicion(false);
-    setModalConfirmarInicio({ abierto: false, registro: null });
-    setVista('examen'); 
+    setExamenActivo(registro); setRespuestasUsuario({}); setExamenTerminado(false); setModoEdicion(false);
+    setModalConfirmarInicio({ abierto: false, registro: null }); setVista('examen'); 
   };
 
-  const intentarSalirExamen = () => {
-    if (examenTerminado) {
-      salirDelExamen();
-      return;
-    }
-    setModalAdvertenciaSalida(true);
-  };
-
+  const intentarSalirExamen = () => { if (examenTerminado) { salirDelExamen(); return; } setModalAdvertenciaSalida(true); };
   const salirDelExamen = () => {
-    setModalAdvertenciaSalida(false);
-    setExamenActivo(null);
-    setRespuestasUsuario({});
+    setModalAdvertenciaSalida(false); setExamenActivo(null); setRespuestasUsuario({});
     setVista(rol === 'docente' ? 'historial' : 'panel_estudiante');
   };
 
   const seleccionarOpcion = (pi, op) => { if (!examenTerminado) setRespuestasUsuario({ ...respuestasUsuario, [pi]: op }); };
-  
   const calcularCalificacion = () => { 
-    let c = 0; 
-    examenActivo.preguntas_json.forEach((p, i) => { if (respuestasUsuario[i] === p.respuesta_correcta) c++; }); 
-    return c; 
+    let c = 0; examenActivo.preguntas_json.forEach((p, i) => { if (respuestasUsuario[i] === p.respuesta_correcta) c++; }); return c; 
   };
 
   const intentarEntregarEvaluacion = () => {
@@ -254,27 +209,15 @@ function EvaluacionesIA() {
   };
 
   const confirmarEntregaExamen = () => {
-    setExamenTerminado(true);
-    setModalConfirmarEntrega(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setExamenTerminado(true); setModalConfirmarEntrega(false); window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reemplazo del window.confirm para reiniciar examen
-  const reiniciarExamen = () => {
-    setModalConfirmarReinicio(true);
-  };
+  const reiniciarExamen = () => { setModalConfirmarReinicio(true); };
   const confirmarReinicio = () => {
-    setRespuestasUsuario({});
-    setExamenTerminado(false);
-    setModalConfirmarReinicio(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setRespuestasUsuario({}); setExamenTerminado(false); setModalConfirmarReinicio(false); window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const modoExamenActivo = vista === 'examen' && examenActivo && !examenTerminado && rol === 'estudiante';
-
-  // ==========================================
-  // RENDERIZADO DEL SHELL DE LA APLICACIÓN
-  // ==========================================
 
   if (!rol) {
     return (
@@ -292,124 +235,95 @@ function EvaluacionesIA() {
   return (
     <div className={`min-h-screen ${modoExamenActivo ? 'bg-white' : 'bg-[#f8f9fa]'} flex flex-col font-sans text-gray-800 relative`}>
       
-      {/* ========================================== */}
-      {/* ZONA DE MODALES (DOCENTE Y GENERAL)      */}
-      {/* ========================================== */}
-      
-      {/* 1. MODAL GENÉRICO DE INFORMACIÓN (Alertas de Éxito, Error, Warning) */}
+      {/* --- RENDERIZADO DE TODOS LOS MODALES REUTILIZABLES --- */}
       {modalInfo.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className={`flex items-center justify-center w-16 h-16 mx-auto rounded-full mb-4 ${
-              modalInfo.tipo === 'exito' ? 'bg-green-100 text-green-600' : 
-              modalInfo.tipo === 'error' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
-            }`}>
-              <span className="material-symbols-outlined text-4xl">
-                {modalInfo.tipo === 'exito' ? 'check_circle' : modalInfo.tipo === 'error' ? 'error' : 'warning'}
-              </span>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100">
+            <div className={`flex items-center justify-center w-16 h-16 mx-auto rounded-full mb-4 ${modalInfo.tipo === 'exito' ? 'bg-green-100 text-green-600' : modalInfo.tipo === 'error' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}>
+              <span className="material-symbols-outlined text-4xl">{modalInfo.tipo === 'exito' ? 'check_circle' : modalInfo.tipo === 'error' ? 'error' : 'warning'}</span>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">{modalInfo.titulo}</h3>
             <p className="text-gray-500 mb-6 text-sm">{modalInfo.mensaje}</p>
-            <button onClick={() => setModalInfo({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' })} className={`w-full py-3 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none ${
-              modalInfo.tipo === 'exito' ? 'bg-green-600 hover:bg-green-700' : 
-              modalInfo.tipo === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-500 hover:bg-yellow-600'
-            }`}>
-              Entendido
-            </button>
+            <button onClick={() => setModalInfo({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' })} className={`w-full py-3 text-white font-bold rounded-xl cursor-pointer border-none ${modalInfo.tipo === 'exito' ? 'bg-green-600 hover:bg-green-700' : modalInfo.tipo === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-500 hover:bg-yellow-600'}`}>Entendido</button>
           </div>
         </div>
       )}
 
-      {/* 2. MODAL CONFIRMAR ELIMINAR EXAMEN (Historial) */}
       {modalConfirmarEliminar.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
               <span className="material-symbols-outlined text-red-600 text-3xl">delete_forever</span>
             </div>
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Eliminar Examen?</h3>
-            <p className="text-center text-gray-500 mb-8">Esta acción borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
+            <p className="text-center text-gray-500 mb-8">Esta acción borrará el examen permanentemente de tu base de datos de Neon. No se puede deshacer.</p>
             <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarEliminar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarEliminacionExamen} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Eliminar</button>
+              <button onClick={() => setModalConfirmarEliminar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarEliminacionExamen} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl cursor-pointer border-none shadow-md">Sí, Eliminar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. MODAL CONFIRMAR ELIMINAR PREGUNTA (Modo Edición) */}
       {modalConfirmarEliminarPregunta.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
               <span className="material-symbols-outlined text-red-600 text-3xl">remove_selection</span>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">¿Borrar Pregunta?</h3>
             <p className="text-gray-500 mb-6 text-sm">Esta pregunta será removida del cuestionario actual.</p>
             <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarEliminarPregunta({ abierto: false, index: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarEliminarPregunta} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Borrar</button>
+              <button onClick={() => setModalConfirmarEliminarPregunta({ abierto: false, index: null })} className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarEliminarPregunta} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl cursor-pointer border-none">Borrar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. MODAL PUBLICAR EXAMEN */}
       {modalPublicar.abierto && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100">
             <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
               <span className="material-symbols-outlined text-blue-600 text-2xl">rocket_launch</span>
             </div>
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Publicar Evaluación?</h3>
-            <p className="text-center text-gray-500 mb-8">Una vez publicado, este cuestionario será visible para tus estudiantes y <strong className="text-gray-700">no podrá ser editado</strong> mientras esté en vivo.</p>
+            <p className="text-center text-gray-500 mb-8">Los estudiantes podrán responderla en tiempo real y ver sus calificaciones.</p>
             <div className="flex gap-3">
-              <button onClick={() => setModalPublicar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarPublicacion} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Publicar</button>
+              <button onClick={() => setModalPublicar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarPublicacion} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl cursor-pointer border-none shadow-md">Sí, Publicar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 5. MODAL ALERTA EDICIÓN */}
       {modalAlertaEdicion && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
               <span className="material-symbols-outlined text-yellow-600 text-3xl">lock</span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Examen Bloqueado</h3>
-            <p className="text-gray-500 mb-6 text-sm">No puedes editar un cuestionario que ya está publicado. Para hacer cambios, primero debes <strong className="text-gray-700">Ocultarlo</strong> desde tu Historial.</p>
-            <button onClick={() => setModalAlertaEdicion(false)} className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Entendido</button>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Examen Publicado</h3>
+            <p className="text-gray-500 mb-6 text-sm">Oculta primero el cuestionario a los alumnos para poder editar los reactivos.</p>
+            <button onClick={() => setModalAlertaEdicion(false)} className="w-full py-3 bg-yellow-500 text-white font-bold rounded-xl cursor-pointer border-none">Entendido</button>
           </div>
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* ZONA DE MODALES (ESTUDIANTE)             */}
-      {/* ========================================== */}
-      
       {modalConfirmarInicio.abierto && modalConfirmarInicio.registro && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-10 overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-10 border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 rounded-full mb-6">
               <span className="material-symbols-outlined text-blue-600 text-3xl">play_circle</span>
             </div>
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Comenzar Evaluación?</h3>
             <p className="text-center text-gray-600 mb-3">Has seleccionado el examen:</p>
             <div className="bg-blue-50 border border-blue-100 text-blue-800 font-bold p-4 rounded-xl text-center text-lg mb-8">
-              📄 {modalConfirmarInicio.registro.nombre_documento}
+              📄 {modalConfirmarInicio.registro.nombre_examen || modalConfirmarInicio.registro.nombre_documento}
             </div>
-            <p className="text-center text-gray-500 mb-8 text-sm bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              ⚠️ Asegúrate de tener una conexión estable y tiempo suficiente. Una vez iniciado, el intento se registrará y no podrás pausarlo.
-            </p>
             <div className="flex gap-4">
-              <button onClick={() => setModalConfirmarInicio({ abierto: false, registro: null })} className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">
-                Cancelar
-              </button>
-              <button onClick={confirmarInicioExamen} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-lg shadow-blue-500/30 border-none outline-none">
-                Sí, Comenzar
-              </button>
+              <button onClick={() => setModalConfirmarInicio({ abierto: false, registro: null })} className="flex-1 py-3.5 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarInicioExamen} className="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl cursor-pointer border-none shadow-lg shadow-blue-500/30">Sí, Comenzar</button>
             </div>
           </div>
         </div>
@@ -417,21 +331,15 @@ function EvaluacionesIA() {
 
       {modalAdvertenciaSalida && (
         <div className="fixed inset-0 z-[110] bg-gray-900/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center border border-gray-100">
             <div className="flex items-center justify-center w-20 h-20 mx-auto bg-red-100 rounded-full mb-6">
               <span className="material-symbols-outlined text-red-600 text-5xl">warning</span>
             </div>
-            <h3 className="text-3xl font-extrabold text-gray-900 mb-3">¡Alto ahí!</h3>
-            <p className="text-gray-600 mb-8 leading-relaxed">
-              Si sales ahora, <strong className="text-red-700">tus respuestas no se guardarán</strong> y perderás tu progreso en este intento de evaluación. ¿Estás seguro de que quieres abandonar?
-            </p>
+            <h3 className="text-3xl font-extrabold text-gray-900 mb-3">Examen en Progreso</h3>
+            <p className="text-gray-600 mb-8 leading-relaxed">Si sales ahora, perderás las respuestas seleccionadas en este intento.</p>
             <div className="flex gap-4 flex-col">
-              <button onClick={() => setModalAdvertenciaSalida(false)} className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-2xl cursor-pointer transition-colors border-none outline-none text-lg">
-                No, Volver al Examen
-              </button>
-              <button onClick={salirDelExamen} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl cursor-pointer transition-colors shadow-md border-none outline-none text-lg">
-                Sí, Salir y Perder Progreso
-              </button>
+              <button onClick={() => setModalAdvertenciaSalida(false)} className="w-full py-4 bg-gray-100 text-gray-800 font-bold rounded-2xl cursor-pointer border-none text-lg">Volver al Examen</button>
+              <button onClick={salirDelExamen} className="w-full py-4 bg-red-600 text-white font-bold rounded-2xl cursor-pointer border-none text-lg">Abandonar</button>
             </div>
           </div>
         </div>
@@ -439,91 +347,51 @@ function EvaluacionesIA() {
 
       {modalConfirmarEntrega && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-6">
               <span className="material-symbols-outlined text-green-600 text-3xl">send</span>
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">¿Entregar Evaluación?</h3>
-            <p className="text-gray-500 mb-8 text-sm">
-              Una vez que entregues, el examen será calificado automáticamente y <strong className="text-gray-700">no podrás cambiar tus respuestas</strong>.
-            </p>
+            <p className="text-gray-500 mb-8 text-sm">Se enviarán tus respuestas finales y recibirás tu retroalimentación guiada por IA.</p>
             <div className="flex gap-4">
-              <button onClick={() => setModalConfirmarEntrega(false)} className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">
-                Cancelar
-              </button>
-              <button onClick={confirmarEntregaExamen} className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-lg shadow-green-500/30 border-none outline-none">
-                Sí, Entregar
-              </button>
+              <button onClick={() => setModalConfirmarEntrega(false)} className="flex-1 py-3.5 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarEntregaExamen} className="flex-1 py-3.5 bg-green-600 text-white font-bold rounded-xl cursor-pointer border-none shadow-lg shadow-green-500/30">Sí, Entregar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL REINICIAR EXAMEN (Si aplica) */}
       {modalConfirmarReinicio && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100">
             <div className="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
               <span className="material-symbols-outlined text-yellow-600 text-3xl">replay</span>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">¿Intentar de nuevo?</h3>
-            <p className="text-gray-500 mb-6 text-sm">Se borrarán tus resultados actuales y empezarás desde cero.</p>
+            <p className="text-gray-500 mb-6 text-sm">Reiniciarás las casillas del examen para resolverlo nuevamente.</p>
             <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarReinicio(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarReinicio} className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Reintentar</button>
+              <button onClick={() => setModalConfirmarReinicio(false)} className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl cursor-pointer border-none">Cancelar</button>
+              <button onClick={confirmarReinicio} className="flex-1 py-3 bg-yellow-500 text-white font-bold rounded-xl cursor-pointer border-none">Reintentar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* NAVBAR SUPERIOR MODULAR                  */}
-      {/* ========================================== */}
       <Navbar 
-        rol={rol}
-        setVista={setVista}
-        modoExamenActivo={modoExamenActivo}
-        intentarSalirExamen={intentarSalirExamen}
-        menuUsuarioAbierto={menuUsuarioAbierto}
-        setMenuUsuarioAbierto={setMenuUsuarioAbierto}
-        cerrarSesion={cerrarSesion}
+        rol={rol} setVista={setVista} modoExamenActivo={modoExamenActivo} intentarSalirExamen={intentarSalirExamen}
+        menuUsuarioAbierto={menuUsuarioAbierto} setMenuUsuarioAbierto={setMenuUsuarioAbierto} cerrarSesion={cerrarSesion}
       />
 
-      {/* --- CONTENEDOR PRINCIPAL --- */}
       <div className={`flex flex-1 overflow-hidden mt-16 ${modoExamenActivo ? 'justify-center' : ''}`}>
-        
-        {/* ========================================== */}
-        {/* SIDEBAR LATERAL IZQUIERDO MODULAR        */}
-        {/* ========================================== */}
-        <Sidebar 
-          rol={rol}
-          vista={vista}
-          setVista={setVista}
-          modoExamenActivo={modoExamenActivo}
-        />
+        <Sidebar rol={rol} vista={vista} setVista={setVista} modoExamenActivo={modoExamenActivo} />
 
         <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)] transition-all`}>
           <div className={`${modoExamenActivo ? 'w-full' : 'max-w-6xl'} mx-auto`}>
 
-            {vista === 'dashboard' && (
-              <div className="flex flex-col items-center justify-center pt-32 text-center bg-white p-16 rounded-3xl border border-gray-100 shadow-sm">
-                <span className="material-symbols-outlined text-7xl text-gray-300 mb-5 animate-pulse">construction</span>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
-                <p className="text-gray-500 max-w-md">Esta sección de analíticas se encuentra en desarrollo. Próximamente podrás ver las métricas de tus clases aquí.</p>
-              </div>
-            )}
-
-            {vista === 'clases' && (
-              <div className="flex flex-col items-center justify-center pt-32 text-center bg-white p-16 rounded-3xl border border-gray-100 shadow-sm">
-                <span className="material-symbols-outlined text-7xl text-gray-300 mb-5 animate-pulse">construction</span>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
-                <p className="text-gray-500 max-w-md">La gestión y creación de grupos llegará en las próximas actualizaciones de QuizAI.</p>
-              </div>
-            )}
-
-            {/* VISTAS MODULARES */}
             {vista === 'nuevo' && rol === 'docente' && (
               <VistaCrearExamen 
+                nombreExamen={nombreExamen}         
+                setNombreExamen={setNombreExamen}   
                 numPreguntas={numPreguntas}
                 setNumPreguntas={setNumPreguntas}
                 setArchivo={setArchivo}
@@ -556,25 +424,12 @@ function EvaluacionesIA() {
 
             {vista === 'examen' && examenActivo && (
               <VistaExamen 
-                rol={rol}
-                examenActivo={examenActivo}
-                modoEdicion={modoEdicion}
-                setModoEdicion={setModoEdicion}
-                setModalAlertaEdicion={setModalAlertaEdicion}
-                examenTerminado={examenTerminado}
-                calcularCalificacion={calcularCalificacion}
-                respuestasUsuario={respuestasUsuario}
-                eliminarPregunta={eliminarPregunta}
-                actualizarPregunta={actualizarPregunta}
-                actualizarOpcion={actualizarOpcion}
-                seleccionarOpcion={seleccionarOpcion}
-                agregarPreguntaVacia={agregarPreguntaVacia}
-                guardarEdicionEnBackend={guardarEdicionEnBackend}
-                setVista={setVista}
-                intentarEntregarEvaluacion={intentarEntregarEvaluacion}
-                salirDelExamen={salirDelExamen}
-                modoExamenActivo={modoExamenActivo}
-                reiniciarExamen={reiniciarExamen}
+                rol={rol} examenActivo={examenActivo} modoEdicion={modoEdicion} setModoEdicion={setModoEdicion}
+                setModalAlertaEdicion={setModalAlertaEdicion} examenTerminado={examenTerminado} calcularCalificacion={calcularCalificacion}
+                respuestasUsuario={respuestasUsuario} eliminarPregunta={eliminarPregunta} actualizarPregunta={actualizarPregunta}
+                actualizarOpcion={actualizarOpcion} seleccionarOpcion={seleccionarOpcion} agregarPreguntaVacia={agregarPreguntaVacia}
+                guardarEdicionEnBackend={guardarEdicionEnBackend} setVista={setVista} intentarEntregarEvaluacion={intentarEntregarEvaluacion}
+                salirDelExamen={salirDelExamen} modoExamenActivo={modoExamenActivo} reiniciarExamen={reiniciarExamen}
               />
             )}
 

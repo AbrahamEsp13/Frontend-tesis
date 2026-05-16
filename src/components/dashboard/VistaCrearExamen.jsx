@@ -1,150 +1,96 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 function VistaCrearExamen({ 
+  nombreExamen, 
+  setNombreExamen, 
   numPreguntas, 
   setNumPreguntas, 
   setArchivo, 
   generarCuestionario, 
-  cargando, 
-  error 
+  cargando 
 }) {
-  const [nombreArchivoMostrado, setNombreArchivoMostrado] = useState(null);
-
+  
   const manejarCambioArchivo = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setArchivo(file); 
-      setNombreArchivoMostrado(file.name); 
+    if (e.target.files && e.target.files.length > 0) {
+      setArchivo(e.target.files[0]);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-12 items-start">
-      
-      {/* --- COLUMNA IZQUIERDA: TEXTO INFORMATIVO --- */}
-      <div className="md:col-span-2 space-y-6 pt-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-2xl text-blue-700">
-            <span className="material-symbols-outlined text-3xl">auto_awesome</span>
-          </div>
-          <h2 className="text-4xl font-extrabold tracking-tight text-gray-900 m-0">
-            Genera tu examen mágico
-          </h2>
-        </div>
-        
-        <p className="text-lg text-gray-600 leading-relaxed">
-          Sube tus apuntes, presentaciones o libros en formato PDF. Nuestra Inteligencia Artificial analizará el contenido y creará una evaluación personalizada en cuestión de segundos.
-        </p>
-
-        <div className="space-y-5 pt-4">
-          <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100 shrink-0">1</span>
-            <p className="font-semibold text-gray-700 m-0">Carga tus documentos PDF base</p>
-          </div>
-          <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100 shrink-0">2</span>
-            <p className="font-semibold text-gray-700 m-0">Elige la cantidad de preguntas</p>
-          </div>
-          <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100 shrink-0">3</span>
-            <p className="font-semibold text-gray-700 m-0">¡Deja que la IA haga la magia!</p>
-          </div>
-        </div>
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">Generar Nuevo Examen</h2>
+        <p className="text-gray-500">Sube tu material en PDF, asígnale un nombre descriptivo a la evaluación y Gemini generará los reactivos.</p>
       </div>
 
-      {/* --- COLUMNA DERECHA: ACCIONES --- */}
-      <div className="md:col-span-3 space-y-8">
+      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
         
-        {/* 1. DROPZONE */}
-        <div className="bg-white p-10 rounded-3xl shadow-lg border-2 border-dashed border-gray-300 flex flex-col items-center text-center group hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer relative">
-          <span className="material-symbols-outlined text-7xl text-gray-400 group-hover:text-blue-500 transition-colors mb-5">
-            cloud_upload
-          </span>
-          
-          {nombreArchivoMostrado ? (
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-center gap-3 w-full justify-center">
-              <span className="material-symbols-outlined text-red-500 text-3xl">picture_as_pdf</span>
-              <span className="font-bold text-blue-900 truncate max-w-xs">{nombreArchivoMostrado}</span>
-              <span className="material-symbols-outlined text-green-500">check_circle</span>
-            </div>
-          ) : (
-            <>
-              <h3 className="text-xl font-bold text-gray-800 mb-2 m-0">Arrastra y suelta tu PDF aquí</h3>
-              <p className="text-gray-500 mb-6 m-0">o haz clic para explorar tus archivos</p>
-            </>
-          )}
-
-          <p className="text-xs text-gray-400 mt-5 m-0">Solo archivos PDF (Máx. 25MB)</p>
-
+        {/* INPUT: NOMBRE DEL EXAMEN */}
+        <div className="mb-8">
+          <label className="block text-sm font-bold text-gray-700 mb-2">Título de la Evaluación <span className="text-red-500">*</span></label>
           <input 
-            type="file" 
-            accept=".pdf" 
-            onChange={manejarCambioArchivo} 
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-            id="fileUpload"
+            type="text" 
+            value={nombreExamen}
+            onChange={(e) => setNombreExamen(e.target.value)}
+            placeholder="Ej. Examen Parcial - Arquitectura de Software"
+            className="w-full p-4 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-800"
+            disabled={cargando}
           />
-          
-          {!nombreArchivoMostrado && (
-             <label htmlFor="fileUpload" className="mt-6 py-3 px-8 bg-gray-100 group-hover:bg-blue-600 text-gray-700 group-hover:text-white font-bold rounded-full transition-colors cursor-pointer shadow-sm text-sm">
-               Seleccionar archivo
-             </label>
-          )}
         </div>
 
-        {/* 2. TARJETA DE CONFIGURACIÓN */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-5">
-            <span className="material-symbols-outlined text-blue-600">settings</span>
-            <h3 className="text-xl font-bold text-gray-900 m-0">Configuración del examen</h3>
-          </div>
-
-          <div className="space-y-3">
-            <label htmlFor="numPreguntas" className="block font-bold text-gray-800 text-lg">
-              Cantidad de preguntas a generar:
-            </label>
-            
-            {/* CORRECCIÓN: flex-wrap para que se acomode bien, y w-52 para darle más espacio */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 mt-2">
-              <div className="flex items-center bg-gray-50 border border-gray-300 rounded-xl w-48 sm:w-52 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all shrink-0">
-                <input 
-                  id="numPreguntas"
-                  type="number" 
-                  min="1" 
-                  max="15" 
-                  value={numPreguntas} 
-                  onChange={(e) => setNumPreguntas(e.target.value)} 
-                  className="w-full p-4 rounded-l-xl border-none text-2xl outline-none text-center font-extrabold text-gray-700 bg-transparent" 
-                />
-                <span className="px-4 text-gray-500 font-bold border-l border-gray-200 text-sm shrink-0">preguntas</span>
-              </div>
-              <p className="text-sm text-gray-500 m-0 leading-tight">
-                Recomendado: 5 a 15 reactivos para mayor precisión.
-              </p>
+        {/* INPUT: ARCHIVO PDF */}
+        <div className="mb-8">
+          <label className="block text-sm font-bold text-gray-700 mb-2">Documento Base (PDF) <span className="text-red-500">*</span></label>
+          <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:bg-blue-50/50 hover:border-blue-300 transition-colors">
+            <input 
+              type="file" 
+              accept="application/pdf"
+              onChange={manejarCambioArchivo}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={cargando}
+            />
+            <div className="pointer-events-none">
+              <span className="material-symbols-outlined text-4xl text-blue-500 mb-3">upload_file</span>
+              <p className="font-bold text-gray-700 text-lg mb-1">Cargar archivo de estudio</p>
+              <p className="text-gray-400 text-sm">El texto será procesado de forma privada para el contexto RAG.</p>
             </div>
-            {/* FIN DE LA CORRECCIÓN */}
-
           </div>
         </div>
-        
-        {/* BOTÓN DE GENERAR */}
-        <button 
-          onClick={generarCuestionario} 
-          disabled={cargando || !nombreArchivoMostrado} 
-          className={`w-full py-5 px-6 text-xl font-bold text-white border-none rounded-2xl shadow-xl transition-all flex justify-center items-center gap-3 outline-none shadow-blue-500/20 ${cargando || !nombreArchivoMostrado ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer hover:-translate-y-0.5'}`}
+
+        {/* INPUT: CANTIDAD DE PREGUNTAS */}
+        <div className="mb-10 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <span className="material-symbols-outlined text-gray-400">format_list_numbered</span>
+              Número de reactivos
+            </label>
+            <span className="bg-blue-100 text-blue-700 font-black px-4 py-1.5 rounded-lg text-lg">
+              {numPreguntas}
+            </span>
+          </div>
+          <input 
+            type="range" min="1" max="20" value={numPreguntas}
+            onChange={(e) => setNumPreguntas(e.target.value)}
+            className="w-full h-2.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            disabled={cargando}
+          />
+        </div>
+
+        {/* BOTÓN GENERAR */}
+        <button
+          onClick={generarCuestionario}
+          disabled={cargando}
+          className={`w-full py-4.5 rounded-2xl font-extrabold text-white transition-all text-lg shadow-lg flex items-center justify-center gap-3 border-none outline-none ${
+            cargando ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30 active:scale-[0.98] cursor-pointer'
+          }`}
         >
-          {cargando ? <span className="material-symbols-outlined animate-spin text-2xl">sync</span> : <span className="material-symbols-outlined text-2xl">auto_awesome</span>}
-          {cargando ? "La IA está analizando tu PDF..." : "¡Generar Examen Mágico!"}
+          {cargando ? (
+            <><span className="material-symbols-outlined animate-spin text-2xl">sync</span> Procesando Contexto con IA...</>
+          ) : (
+            <><span className="material-symbols-outlined text-2xl">auto_awesome</span> Generar Evaluación</>
+          )}
         </button>
 
-        {error && (
-          <div className="text-red-700 p-5 bg-red-50 rounded-2xl mt-6 border border-red-200 flex items-center gap-3 shadow-inner">
-            <span className="material-symbols-outlined text-3xl">error</span> 
-            <div className='flex flex-col'>
-              <span className='font-bold'>Ocurrió un pequeño problema:</span> 
-              <span className='text-sm'>{error}</span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
