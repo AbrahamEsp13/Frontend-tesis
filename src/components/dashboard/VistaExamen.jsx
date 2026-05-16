@@ -31,7 +31,9 @@ function VistaExamen({
             <span className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-1 block">
               {modoEdicion ? '✏️ Modo Edición (Docente)' : '👁️ Vista Previa del Docente'}
             </span>
-            <h2 className="text-3xl font-extrabold text-gray-900 m-0">{examenActivo.nombre_documento}</h2>
+            <h2 className="text-3xl font-extrabold text-gray-900 m-0">
+              {examenActivo.nombre_examen || examenActivo.nombre_documento}
+            </h2>
           </div>
           
           {!modoEdicion && (
@@ -62,7 +64,9 @@ function VistaExamen({
                 <span className="material-symbols-outlined text-xs">chevron_right</span>
                 <span className="text-xs font-bold uppercase tracking-wider">Retroalimentación IA</span>
               </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 m-0">{examenActivo.nombre_documento}</h1>
+              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 m-0">
+                 {examenActivo.nombre_examen || examenActivo.nombre_documento}
+              </h1>
               <p className="text-gray-500 mt-2.5 max-w-lg">Revisa tus aciertos, errores y la retroalimentación basada en el material de estudio proporcionado.</p>
             </div>
             

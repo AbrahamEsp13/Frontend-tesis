@@ -20,7 +20,8 @@ function VistaPanelEstudiante({ listaHistorial, cargandoHistorial, intentarInici
           <div key={registro.id} className="bg-white border border-blue-100 p-8 rounded-2xl mb-5 shadow-lg shadow-blue-500/5 transition-transform hover:-translate-y-1">
             <div className="flex justify-between items-center mb-5 gap-4">
               <h3 className="m-0 text-2xl font-bold text-blue-800 flex items-center gap-3 leading-tight">
-                <span className="material-symbols-outlined text-3xl">assignment</span> Evaluación: {registro.nombre_documento}
+                <span className="material-symbols-outlined text-3xl">assignment</span> 
+                Evaluación: {registro.nombre_examen || registro.nombre_documento}
               </h3>
               <span className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-bold border border-blue-100 whitespace-nowrap">
                 {registro.preguntas_json.length} Preguntas
