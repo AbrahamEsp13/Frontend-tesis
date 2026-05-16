@@ -15,7 +15,7 @@ function VistaHistorialDocente({
       <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
-          <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes desde PostgreSQL.</p>
+          <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes.</p>
         </div>
         <button onClick={() => setVista('nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-7 rounded-2xl shadow-lg shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2 border-none outline-none text-base">
           ✨ Crear Nuevo
@@ -28,25 +28,26 @@ function VistaHistorialDocente({
         </div>
       ) : listaHistorial.map((registro) => (
         <div key={registro.id} className={`bg-white border ${registro.publicado ? 'border-green-100 border-l-4 border-l-green-500' : 'border-yellow-100 border-l-4 border-l-yellow-400'} p-7 rounded-2xl mb-5 shadow-sm hover:shadow-md transition-shadow`}>
-          
-          <div className="flex justify-between items-start mb-1 gap-4">
-            {/* TÍTULO DOMINANTE: Nombre del Examen */}
-            <h3 className="m-0 text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-               {registro.nombre_examen || "Examen sin título"}
+          <div className="flex justify-between items-start mb-2 gap-4">
+            
+            {/* TÍTULO PRINCIPAL: EL NOMBRE DEL EXAMEN */}
+            <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
+              <span className="material-symbols-outlined text-blue-500">quiz</span> {registro.nombre_examen || "Examen sin título"}
             </h3>
             
             <span className={`text-xs px-3.5 py-2 rounded-full font-bold flex items-center gap-1.5 border whitespace-nowrap ${registro.publicado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
               {registro.publicado ? <><span className="material-symbols-outlined text-[15px]">check_circle</span> Publicado</> : <><span className="material-symbols-outlined text-[15px]">edit_document</span> Borrador</>}
             </span>
           </div>
-
-          {/* INFORMACIÓN SECUNDARIA: Nombre del archivo PDF original */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-            <span className="material-symbols-outlined text-[18px] text-gray-400">picture_as_pdf</span> 
-            <span className="truncate max-w-[300px]">Archivo base: {registro.nombre_documento}</span>
-            <span className="mx-2 text-gray-300">•</span>
-            <span className="material-symbols-outlined text-[18px] text-gray-400">calendar_today</span> 
-            <span>{registro.fecha_creacion ? new Date(registro.fecha_creacion).toLocaleDateString() : 'Reciente'}</span>
+          
+          {/* SUBTÍTULOS: FECHA Y NOMBRE DEL PDF */}
+          <div className="text-sm text-gray-500 mb-6 flex flex-wrap items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px]">calendar_today</span> {new Date(registro.fecha_creacion).toLocaleDateString()}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-gray-400">picture_as_pdf</span> Archivo base: {registro.nombre_documento}
+            </span>
           </div>
 
           <div className="flex gap-3.5 flex-wrap items-center bg-gray-50/50 p-3.5 rounded-xl border border-gray-100">
@@ -69,7 +70,7 @@ function VistaHistorialDocente({
               </button>
             )}
             
-            <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2.5 py-2.5 px-4 bg-transparent text-gray-400 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors outline-none" title="Eliminar">
+            <button onClick={() => eliminarExamen(registro.id)} className="flex items-center gap-2.5 py-2.5 px-4 bg-transparent text-gray-300 hover:text-red-600 border-none rounded-lg cursor-pointer transition-colors outline-none" title="Eliminar">
               <span className="material-symbols-outlined text-[20px]">delete</span>
             </button>
           </div>
