@@ -28,7 +28,6 @@ function EvaluacionesIA() {
   const [modalPublicar, setModalPublicar] = useState({ abierto: false, id: null });
   const [modalAlertaEdicion, setModalAlertaEdicion] = useState(false);
 
-  // NUEVOS ESTADOS PARA REEMPLAZAR ALERTS Y CONFIRMS
   const [modalInfo, setModalInfo] = useState({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' });
   const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState({ abierto: false, id: null });
   const [modalConfirmarEliminarPregunta, setModalConfirmarEliminarPregunta] = useState({ abierto: false, index: null });
@@ -41,7 +40,7 @@ function EvaluacionesIA() {
 
   // Estados del generador
   const [nombreExamen, setNombreExamen] = useState(''); 
-  const [materia, setMateria] = useState('');
+  const [materia, setMateria] = useState(''); 
   const [archivo, setArchivo] = useState(null);
   const [numPreguntas, setNumPreguntas] = useState(5);
   const [cargando, setCargando] = useState(false);
@@ -98,8 +97,12 @@ function EvaluacionesIA() {
 
   // --- LÓGICA DEL DOCENTE ---
   const generarCuestionario = async () => {
-    if (!nombreExamen.trim()) { // <-- VALIDACIÓN DEL NOMBRE
+    if (!nombreExamen.trim()) { 
       setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, dale un título a tu examen.', tipo: 'warning' });
+      return;
+    }
+    if (!materia) { 
+      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, selecciona una materia.', tipo: 'warning' });
       return;
     }
     if (!archivo) {
@@ -110,7 +113,7 @@ function EvaluacionesIA() {
     const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
     const formData = new FormData();
     formData.append("nombre_examen", nombreExamen); 
-    formData.append("materia", materia);
+    formData.append("materia", materia); 
     formData.append("archivo", archivo);
     formData.append("usuario_id", usuario.id); 
     formData.append("num_preguntas", numPreguntas);
@@ -121,7 +124,8 @@ function EvaluacionesIA() {
       
       setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
       
-      setNombreExamen(''); // <-- LIMPIAR CAMPO TRAS ÉXITO
+      setNombreExamen(''); 
+      setMateria('');
       setArchivo(null);
       setVista('historial'); 
       cargarHistorial(); 
@@ -165,7 +169,6 @@ function EvaluacionesIA() {
   };
 
   const exportarExamen = (registro) => {
-    // UTILIZA EL NUEVO NOMBRE SI EXISTE PARA EL TXT
     const titulo = registro.nombre_examen || registro.nombre_documento;
     let contenido = `📝 EXAMEN: ${titulo}\nGenerado por QuizAI\n========================\n\n`;
     registro.preguntas_json.forEach((p, index) => {
@@ -206,21 +209,55 @@ function EvaluacionesIA() {
     }
   };
 
-  const clonarCuestionarioDelDashboard = (cuestionarioSeleccionado) => {
-    // 1. Mostrar la alerta de éxito simulada
-    setModalInfo({ 
-      abierto: true, 
-      titulo: '¡Examen Clonado!', 
-      mensaje: `Se ha guardado una copia de "${cuestionarioSeleccionado.titulo}" en tu historial personal. Ahora puedes editarlo sin afectar al autor original.`, 
-      tipo: 'exito' 
-    });
-    
-    // 2. Redirigir al historial para que el maestro vea su copia nueva
-    setVista('historial');
-    
-    // NOTA: Esta función es un "placeholder". 
-    // Cuando conectes tu vista comunitaria al backend, aquí enviarás el ID a tu API 
-    // para que la base de datos duplique el JSON y te lo asigne a ti con el sufijo "(Copia)".
+  // NUEVA FUNCIÓN: ENVIAR EXAMEN AL MERCADO COMUNITARIO
+  const compartirEnComunidad = async (id) => {
+    try {
+      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/compartir`, { method: "PUT" });
+      if (respuesta.ok) {
+        setModalInfo({ 
+          abierto: true, 
+          titulo: '¡Examen Compartido!', 
+          mensaje: 'Tu evaluación ahora está disponible en el Mercado Comunitario. ¡Gracias por aportar a otros docentes!', 
+          tipo: 'exito' 
+        });
+        cargarHistorial(); // Refrescar historial para que el botón cambie a "Compartido"
+      }
+    } catch (error) {
+      console.error(error);
+      setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo compartir en la comunidad.', tipo: 'error' });
+    }
+  };
+
+  const clonarCuestionarioDelDashboard = async (cuestionarioSeleccionado) => {
+    setCargandoHistorial(true);
+    const usuarioString = localStorage.getItem("usuarioQuizAI");
+    if (!usuarioString) return;
+    const usuario = JSON.parse(usuarioString);
+
+    try {
+      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${cuestionarioSeleccionado.id}/clonar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario_id: usuario.id })
+      });
+
+      if (respuesta.ok) {
+        setModalInfo({ 
+          abierto: true, 
+          titulo: '¡Examen Guardado!', 
+          mensaje: `Se ha creado una copia en tu historial personal con el sufijo (Copia). Ya puedes modificarlo libremente.`, 
+          tipo: 'exito' 
+        });
+        setVista('historial');
+        cargarHistorial();
+      } else {
+        throw new Error("No se pudo clonar el recurso comunitario.");
+      }
+    } catch (err) {
+      setModalInfo({ abierto: true, titulo: 'Error al clonar', mensaje: err.message, tipo: 'error' });
+    } finally {
+      setCargandoHistorial(false);
+    }
   };
 
   // --- LÓGICA DE VISTA PREVIA (DOCENTE) ---
@@ -320,7 +357,6 @@ function EvaluacionesIA() {
       {/* ZONA DE MODALES (DOCENTE Y GENERAL)        */}
       {/* ========================================== */}
       
-      {/* 1. MODAL GENÉRICO DE INFORMACIÓN (Alertas de Éxito, Error, Warning) */}
       {modalInfo.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -344,7 +380,6 @@ function EvaluacionesIA() {
         </div>
       )}
 
-      {/* 2. MODAL CONFIRMAR ELIMINAR EXAMEN (Historial) */}
       {modalConfirmarEliminar.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
@@ -352,7 +387,7 @@ function EvaluacionesIA() {
               <span className="material-symbols-outlined text-red-600 text-3xl">delete_forever</span>
             </div>
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Eliminar Examen?</h3>
-            <p className="text-center text-gray-500 mb-8">Esta action borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
+            <p className="text-center text-gray-500 mb-8">Esta acción borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
             <div className="flex gap-3">
               <button onClick={() => setModalConfirmarEliminar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
               <button onClick={confirmarEliminacionExamen} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Eliminar</button>
@@ -361,7 +396,6 @@ function EvaluacionesIA() {
         </div>
       )}
 
-      {/* 3. MODAL CONFIRMAR ELIMINAR PREGUNTA (Modo Edición) */}
       {modalConfirmarEliminarPregunta.abierto && (
         <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -378,7 +412,6 @@ function EvaluacionesIA() {
         </div>
       )}
 
-      {/* 4. MODAL PUBLICAR EXAMEN */}
       {modalPublicar.abierto && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
@@ -395,7 +428,6 @@ function EvaluacionesIA() {
         </div>
       )}
 
-      {/* 5. MODAL ALERTA EDICIÓN */}
       {modalAlertaEdicion && (
         <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
@@ -548,9 +580,9 @@ function EvaluacionesIA() {
             {vista === 'nuevo' && rol === 'docente' && (
               <VistaCrearExamen 
                 nombreExamen={nombreExamen}         
-                setNombreExamen={setNombreExamen} 
-                materia={materia}
-                setMateria={setMateria}  
+                setNombreExamen={setNombreExamen}
+                materia={materia}                   
+                setMateria={setMateria}             
                 numPreguntas={numPreguntas}
                 setNumPreguntas={setNumPreguntas}
                 setArchivo={setArchivo}
@@ -570,6 +602,7 @@ function EvaluacionesIA() {
                 despublicarCuestionario={despublicarCuestionario}
                 abrirModalPublicar={abrirModalPublicar}
                 eliminarExamen={eliminarExamen}
+                compartirEnComunidad={compartirEnComunidad} // <--- SE LO PASAMOS A LA VISTA
               />
             )}
 
