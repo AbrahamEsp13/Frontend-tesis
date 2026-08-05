@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 function VistaExamen({
   rol,
@@ -22,7 +22,37 @@ function VistaExamen({
   reiniciarExamen
 }) {
 
-  // Obtenemos los puntos totales si el examen terminó
+  // --- LÓGICA DEL CRONÓMETRO ---
+  const [tiempoSegundos, setTiempoSegundos] = useState(0);
+
+  // Reiniciar el reloj si se reintenta el examen (cuando se limpian las respuestas)
+  useEffect(() => {
+    if (!examenTerminado && Object.keys(respuestasUsuario).length === 0) {
+      setTiempoSegundos(0);
+    }
+  }, [examenTerminado, respuestasUsuario]);
+
+  // Ejecutar el reloj solo si es estudiante, está en el examen y no ha terminado
+  useEffect(() => {
+    let intervalo = null;
+    if (modoExamenActivo && !examenTerminado) {
+      intervalo = setInterval(() => {
+        setTiempoSegundos((prev) => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(intervalo); // Detener el reloj
+    }
+    return () => clearInterval(intervalo); // Limpieza de memoria
+  }, [modoExamenActivo, examenTerminado]);
+
+  // Convertir segundos a formato MM:SS
+  const formatearTiempo = (totalSegundos) => {
+    const minutos = Math.floor(totalSegundos / 60).toString().padStart(2, '0');
+    const segundos = (totalSegundos % 60).toString().padStart(2, '0');
+    return `${minutos}:${segundos}`;
+  };
+
+  // --- LÓGICA DE CALIFICACIONES ---
   const resultados = examenTerminado ? calcularCalificacion() : { obtenido: 0, total: 0 };
   const porcentaje = resultados.total > 0 ? Math.round((resultados.obtenido / resultados.total) * 100) : 0;
   const calificacionBase10 = resultados.total > 0 ? ((resultados.obtenido / resultados.total) * 10).toFixed(1) : "0.0";
@@ -41,6 +71,14 @@ function VistaExamen({
             </div>
           </div>
           
+          {/* Reloj en vivo para el estudiante */}
+          {modoExamenActivo && !examenTerminado && (
+            <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold border border-blue-100 text-lg">
+              <span className="material-symbols-outlined">timer</span>
+              {formatearTiempo(tiempoSegundos)}
+            </div>
+          )}
+
           {rol === 'docente' && !modoExamenActivo && (
             <div className="flex items-center gap-3">
               <button onClick={salirDelExamen} className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors outline-none cursor-pointer">
@@ -61,7 +99,6 @@ function VistaExamen({
       </div>
 
       {/* PANTALLA DE RESULTADOS DEL ESTUDIANTE */}
-      {/* PANTALLA DE RESULTADOS DEL ESTUDIANTE */}
       {examenTerminado && rol === 'estudiante' && (
         <div className="bg-white rounded-3xl p-10 mb-8 text-center border border-gray-100 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-blue-500 to-purple-600"></div>
@@ -78,23 +115,32 @@ function VistaExamen({
             </div>
           </div>
 
-          {/* MÉTRICAS COMPLEMENTARIAS */}
+          {/* MÉTRICAS COMPLEMENTARIAS (MOCKUP EXACTO) */}
           <div className="flex justify-center gap-6 mb-10">
-            <div className="bg-white p-4 rounded-xl border border-gray-100 w-40 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">{resultados.obtenido} <span className="text-lg text-gray-400">/ {resultados.total}</span></div>
-              <div className="text-gray-400 font-semibold text-xs uppercase tracking-wider mt-1">Puntos Netos</div>
+            {/* Tarjeta 1: Puntos */}
+            <div className="bg-white p-5 rounded-xl border border-gray-200 w-48 shadow-sm">
+              <div className="text-3xl font-bold text-blue-800">{resultados.obtenido} <span className="text-xl text-gray-400">/ {resultados.total}</span></div>
+              <div className="text-gray-400 font-bold text-xs uppercase tracking-wider mt-2">Puntos Netos</div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-gray-100 w-40 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">{porcentaje}%</div>
-              <div className="text-gray-400 font-semibold text-xs uppercase tracking-wider mt-1">Precisión</div>
+            
+            {/* Tarjeta 2: Precisión */}
+            <div className="bg-white p-5 rounded-xl border border-gray-200 w-48 shadow-sm">
+              <div className="text-3xl font-bold text-blue-800">{porcentaje}%</div>
+              <div className="text-gray-400 font-bold text-xs uppercase tracking-wider mt-2">Precisión</div>
+            </div>
+
+            {/* Tarjeta 3: Cronómetro */}
+            <div className="bg-white p-5 rounded-xl border border-gray-200 w-48 shadow-sm">
+              <div className="text-3xl font-bold text-blue-600">{formatearTiempo(tiempoSegundos)}</div>
+              <div className="text-gray-400 font-bold text-xs uppercase tracking-wider mt-2">Tiempo Total</div>
             </div>
           </div>
           
           <div className="flex justify-center gap-4">
-            <button onClick={salirDelExamen} className="px-8 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors outline-none cursor-pointer text-lg">
+            <button onClick={salirDelExamen} className="px-8 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors outline-none cursor-pointer text-lg border border-gray-200">
               Volver al Inicio
             </button>
-            <button onClick={reiniciarExamen} className="px-8 py-3.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl transition-colors border border-blue-200 outline-none cursor-pointer text-lg">
+            <button onClick={reiniciarExamen} className="px-8 py-3.5 bg-blue-600 text-white hover:bg-blue-700 font-bold rounded-xl transition-colors shadow-md outline-none cursor-pointer text-lg">
               Reintentar Examen
             </button>
           </div>
@@ -114,7 +160,6 @@ function VistaExamen({
                 <div className="w-full">
                   
                   {/* EDITAR PUNTAJE O MOSTRAR PUNTAJE */}
-                  {/* EDITAR PUNTAJE O MOSTRAR PUNTAJE */}
                   {modoEdicion ? (
                     <div className="flex items-center gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-200 w-max">
                       <span className="text-sm font-bold text-gray-500 ml-2">Valor (Puntos):</span>
@@ -125,8 +170,8 @@ function VistaExamen({
                         value={pregunta.puntuacion || 1} 
                         onChange={(e) => {
                           let valor = Number(e.target.value);
-                          if (valor > 100) valor = 100; // Límite máximo de seguridad
-                          if (valor < 1) valor = 1;     // Evita números negativos o ceros
+                          if (valor > 100) valor = 100; // Límite máximo
+                          if (valor < 1) valor = 1;     // Límite mínimo
                           actualizarPregunta(index, 'puntuacion', valor);
                         }}
                         className="w-16 p-1 text-center border border-gray-300 rounded font-bold text-blue-600 outline-none focus:border-blue-500"
