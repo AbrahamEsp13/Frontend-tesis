@@ -1,11 +1,13 @@
 import React from 'react';
 
-function Sidebar({ rol, vista, setVista, modoExamenActivo }) {
+function Sidebar({ rol, vista, setVista, modoExamenActivo, creditos }) {
   // Si estamos en modo examen, la barra no debe existir
   if (modoExamenActivo) return null;
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-gray-50 p-4 flex flex-col z-40 border-r border-gray-200 hidden md:flex">
+    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-gray-50 p-4 flex flex-col justify-between z-40 border-r border-gray-200 hidden md:flex">
+      
+      {/* SECCIÓN SUPERIOR: BOTONES */}
       <div className="flex flex-col gap-1 mt-4">
         {rol === 'docente' ? (
           <>
@@ -28,6 +30,16 @@ function Sidebar({ rol, vista, setVista, modoExamenActivo }) {
           </button>
         )}
       </div>
+
+      {/* SECCIÓN INFERIOR: TARJETA DE CRÉDITOS (Solo Docentes) */}
+      {rol === 'docente' && (
+        <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl p-4 text-center shadow-sm">
+          <span className="material-symbols-outlined text-blue-500 mb-1 text-3xl">generating_tokens</span>
+          <p className="text-sm text-blue-800 font-bold uppercase tracking-wide">Créditos IA</p>
+          <h3 className="text-3xl font-black text-blue-600 mt-1">{creditos}</h3>
+        </div>
+      )}
+      
     </aside>
   );
 }

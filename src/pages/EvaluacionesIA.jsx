@@ -17,6 +17,7 @@ function EvaluacionesIA() {
 
   // --- ESTADOS DE SESIÓN Y VISTAS ---
   const [rol, setRol] = useState(null);
+  const [creditos, setCreditos] = useState(0);
   const [vista, setVista] = useState('inicio'); 
   const [listaHistorial, setListaHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
@@ -58,6 +59,7 @@ function EvaluacionesIA() {
     if (usuarioGuardado) {
       const usuario = JSON.parse(usuarioGuardado);
       setRol(usuario.rol);
+      setCreditos(usuario.creditos_disponibles || 0);
       setVista(usuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
     }
   }, []);
@@ -123,6 +125,11 @@ function EvaluacionesIA() {
       if (!respuesta.ok) throw new Error("Fallo en el servidor.");
       
       setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
+
+      const nuevosCreditos = creditos - 1;
+      setCreditos(nuevosCreditos);
+      usuario.creditos_disponibles = nuevosCreditos;
+      localStorage.setItem("usuarioQuizAI", JSON.stringify(usuario));
       
       setNombreExamen(''); 
       setMateria('');
@@ -576,6 +583,7 @@ function EvaluacionesIA() {
           vista={vista}
           setVista={setVista}
           modoExamenActivo={modoExamenActivo}
+          creditos={creditos}
         />
 
         <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)] transition-all`}>
@@ -609,6 +617,7 @@ function EvaluacionesIA() {
                 generarCuestionario={generarCuestionario}
                 cargando={cargando}
                 error={error}
+                creditos={creditos}
               />
             )}
 
