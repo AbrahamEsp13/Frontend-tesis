@@ -180,7 +180,7 @@ function VistaExamen({
                   ) : (
                     <div className="mb-2">
                       <span className="inline-block bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100">
-                        💎 {pregunta.puntuacion || 1} {Number(pregunta.puntuacion || 1) === 1 ? 'Punto' : 'Puntos'}
+                       {pregunta.puntuacion || 1} {Number(pregunta.puntuacion || 1) === 1 ? 'Punto' : 'Puntos'}
                       </span>
                     </div>
                   )}
