@@ -25,6 +25,7 @@ function VistaExamen({
   // Obtenemos los puntos totales si el examen terminó
   const resultados = examenTerminado ? calcularCalificacion() : { obtenido: 0, total: 0 };
   const porcentaje = resultados.total > 0 ? Math.round((resultados.obtenido / resultados.total) * 100) : 0;
+  const calificacionBase10 = resultados.total > 0 ? ((resultados.obtenido / resultados.total) * 10).toFixed(1) : "0.0";
 
   return (
     <div className={`mx-auto ${modoExamenActivo ? 'max-w-4xl py-6' : 'max-w-4xl'}`}>
@@ -60,20 +61,32 @@ function VistaExamen({
       </div>
 
       {/* PANTALLA DE RESULTADOS DEL ESTUDIANTE */}
+      {/* PANTALLA DE RESULTADOS DEL ESTUDIANTE */}
       {examenTerminado && rol === 'estudiante' && (
         <div className="bg-white rounded-3xl p-10 mb-8 text-center border border-gray-100 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-blue-500 to-purple-600"></div>
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Evaluación Finalizada</h2>
           <p className="text-gray-500 mb-8 text-lg">Aquí tienes el resumen de tu desempeño</p>
           
-          <div className="flex justify-center gap-8 mb-10">
-            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 w-48">
-              <div className="text-5xl font-black text-blue-600 mb-2">{resultados.obtenido} <span className="text-2xl text-gray-400 font-medium">/ {resultados.total}</span></div>
-              <div className="text-gray-500 font-bold text-sm uppercase tracking-wider">Puntos</div>
+          {/* RESULTADO PRINCIPAL: SOBRE 10 */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-gray-50 p-8 rounded-3xl border border-gray-200 w-64 shadow-inner">
+              <div className={`text-7xl font-black mb-2 ${calificacionBase10 >= 6.0 ? 'text-green-500' : 'text-red-500'}`}>
+                {calificacionBase10}
+              </div>
+              <div className="text-gray-500 font-bold text-sm uppercase tracking-wider">Calificación Final</div>
             </div>
-            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 w-48">
-              <div className={`text-5xl font-black mb-2 ${porcentaje >= 60 ? 'text-green-500' : 'text-red-500'}`}>{porcentaje}%</div>
-              <div className="text-gray-500 font-bold text-sm uppercase tracking-wider">Precisión</div>
+          </div>
+
+          {/* MÉTRICAS COMPLEMENTARIAS */}
+          <div className="flex justify-center gap-6 mb-10">
+            <div className="bg-white p-4 rounded-xl border border-gray-100 w-40 shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">{resultados.obtenido} <span className="text-lg text-gray-400">/ {resultados.total}</span></div>
+              <div className="text-gray-400 font-semibold text-xs uppercase tracking-wider mt-1">Puntos Netos</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-gray-100 w-40 shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">{porcentaje}%</div>
+              <div className="text-gray-400 font-semibold text-xs uppercase tracking-wider mt-1">Precisión</div>
             </div>
           </div>
           
@@ -101,14 +114,21 @@ function VistaExamen({
                 <div className="w-full">
                   
                   {/* EDITAR PUNTAJE O MOSTRAR PUNTAJE */}
+                  {/* EDITAR PUNTAJE O MOSTRAR PUNTAJE */}
                   {modoEdicion ? (
                     <div className="flex items-center gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-200 w-max">
                       <span className="text-sm font-bold text-gray-500 ml-2">Valor (Puntos):</span>
                       <input 
                         type="number" 
                         min="1"
+                        max="100"
                         value={pregunta.puntuacion || 1} 
-                        onChange={(e) => actualizarPregunta(index, 'puntuacion', Number(e.target.value))}
+                        onChange={(e) => {
+                          let valor = Number(e.target.value);
+                          if (valor > 100) valor = 100; // Límite máximo de seguridad
+                          if (valor < 1) valor = 1;     // Evita números negativos o ceros
+                          actualizarPregunta(index, 'puntuacion', valor);
+                        }}
                         className="w-16 p-1 text-center border border-gray-300 rounded font-bold text-blue-600 outline-none focus:border-blue-500"
                       />
                     </div>
