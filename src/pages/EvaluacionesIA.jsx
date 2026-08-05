@@ -174,7 +174,8 @@ function EvaluacionesIA() {
     registro.preguntas_json.forEach((p, index) => {
       contenido += `${index + 1}. ${p.pregunta}\n`;
       p.opciones.forEach(op => { contenido += `   [  ] ${op}\n`; });
-      contenido += `\n   ✅ CLAVE: ${p.respuesta_correcta}\n   💡 Retroalimentación: ${p.justificacion_pedagogica}\n------------------------\n\n`;
+      const valor = p.puntuacion || 1; // Exportamos con el valor de los puntos
+      contenido += `\n   ✅ CLAVE: ${p.respuesta_correcta}\n   💎 Valor: ${valor} puntos\n   💡 Retroalimentación: ${p.justificacion_pedagogica}\n------------------------\n\n`;
     });
     const blob = new Blob([contenido], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -186,7 +187,19 @@ function EvaluacionesIA() {
   // --- LÓGICA DE EDICIÓN Y CLONADO COMUNITARIO ---
   const actualizarPregunta = (i, c, v) => { let ex = {...examenActivo}; ex.preguntas_json[i][c] = v; setExamenActivo(ex); };
   const actualizarOpcion = (qi, oi, v) => { let ex = {...examenActivo}; ex.preguntas_json[qi].opciones[oi] = v; setExamenActivo(ex); };
-  const agregarPreguntaVacia = () => { let ex = {...examenActivo}; ex.preguntas_json.push({pregunta: "Nueva pregunta...", opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], respuesta_correcta: "Opción 1", justificacion_pedagogica: "..."}); setExamenActivo(ex); };
+  
+  // MODIFICADO: Agregamos el campo "puntuacion: 1" por defecto al crear una nueva pregunta manualmente
+  const agregarPreguntaVacia = () => { 
+    let ex = {...examenActivo}; 
+    ex.preguntas_json.push({
+      pregunta: "Nueva pregunta...", 
+      opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], 
+      respuesta_correcta: "Opción 1", 
+      justificacion_pedagogica: "...",
+      puntuacion: 1
+    }); 
+    setExamenActivo(ex); 
+  };
   
   const eliminarPregunta = (index) => { 
     setModalConfirmarEliminarPregunta({ abierto: true, index: index });
@@ -209,7 +222,6 @@ function EvaluacionesIA() {
     }
   };
 
-  // NUEVA FUNCIÓN: ENVIAR EXAMEN AL MERCADO COMUNITARIO
   const compartirEnComunidad = async (id) => {
     try {
       const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/compartir`, { method: "PUT" });
@@ -220,7 +232,7 @@ function EvaluacionesIA() {
           mensaje: 'Tu evaluación ahora está disponible en el Mercado Comunitario. ¡Gracias por aportar a otros docentes!', 
           tipo: 'exito' 
         });
-        cargarHistorial(); // Refrescar historial para que el botón cambie a "Compartido"
+        cargarHistorial(); 
       }
     } catch (error) {
       console.error(error);
@@ -301,10 +313,18 @@ function EvaluacionesIA() {
 
   const seleccionarOpcion = (pi, op) => { if (!examenTerminado) setRespuestasUsuario({ ...respuestasUsuario, [pi]: op }); };
   
+  // MODIFICADO: Ahora el cálculo suma la puntuación de cada reactivo en lugar de contar de 1 en 1.
   const calcularCalificacion = () => { 
-    let c = 0; 
-    examenActivo.preguntas_json.forEach((p, i) => { if (respuestasUsuario[i] === p.respuesta_correcta) c++; }); 
-    return c; 
+    let obtenido = 0;
+    let total = 0;
+    examenActivo.preguntas_json.forEach((p, i) => { 
+      const valorPuntos = Number(p.puntuacion) || 1; // Si no tiene puntos asignados, vale 1
+      total += valorPuntos;
+      if (respuestasUsuario[i] === p.respuesta_correcta) {
+        obtenido += valorPuntos;
+      }
+    }); 
+    return { obtenido, total }; // Devuelve un objeto con lo que sacó vs lo que valía el examen
   };
 
   const intentarEntregarEvaluacion = () => {
@@ -602,7 +622,7 @@ function EvaluacionesIA() {
                 despublicarCuestionario={despublicarCuestionario}
                 abrirModalPublicar={abrirModalPublicar}
                 eliminarExamen={eliminarExamen}
-                compartirEnComunidad={compartirEnComunidad} // <--- SE LO PASAMOS A LA VISTA
+                compartirEnComunidad={compartirEnComunidad} 
               />
             )}
 
