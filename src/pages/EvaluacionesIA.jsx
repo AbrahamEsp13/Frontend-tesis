@@ -122,22 +122,37 @@ function EvaluacionesIA() {
 
     try {
       const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData });
-      if (!respuesta.ok) throw new Error("Fallo en el servidor.");
       
-      setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
+      // --- ESTA ES LA MAGIA QUE LEE EL ERROR DEL BACKEND ---
+      if (!respuesta.ok) {
+        const errorData = await respuesta.json().catch(() => ({}));
+        // Si el backend mandó un 'detail' (como el de los créditos), lo usamos. Si no, usamos un genérico.
+        throw new Error(errorData.detail || "Fallo en el servidor al conectar con la IA.");
+      }
+      // -----------------------------------------------------
 
+      setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
+      
+      // ACTUALIZAMOS LOS CRÉDITOS EN MEMORIA
       const nuevosCreditos = creditos - 1;
       setCreditos(nuevosCreditos);
       usuario.creditos_disponibles = nuevosCreditos;
       localStorage.setItem("usuarioQuizAI", JSON.stringify(usuario));
-      
+
       setNombreExamen(''); 
       setMateria('');
       setArchivo(null);
       setVista('historial'); 
       cargarHistorial(); 
+      
     } catch (err) { 
-      setModalInfo({ abierto: true, titulo: 'Error en la Generación', mensaje: err.message, tipo: 'error' });
+      // MOSTRAMOS EL MENSAJE DINÁMICO EN EL MODAL
+      setModalInfo({ 
+        abierto: true, 
+        titulo: err.message.includes('créditos') ? 'Créditos Agotados' : 'Error en la Generación', 
+        mensaje: err.message, 
+        tipo: err.message.includes('créditos') ? 'warning' : 'error' 
+      });
     } finally { 
       setCargando(false); 
     }
