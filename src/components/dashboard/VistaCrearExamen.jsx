@@ -27,7 +27,7 @@ function VistaCrearExamen({
             <h3 className="text-red-800 font-bold text-lg">Has agotado tus créditos por hoy</h3>
             <p className="text-red-600 mt-1">
               Para proteger los recursos del sistema, tienes un límite diario de generaciones con Inteligencia Artificial. 
-              Tus créditos se regenerarán automáticamente a la **medianoche (00:00 hrs)**.
+              Tus créditos se regenerarán automáticamente a la <strong>medianoche (00:00 hrs)</strong>.
             </p>
           </div>
         </div>
