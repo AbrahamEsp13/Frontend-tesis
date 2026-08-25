@@ -1,7 +1,8 @@
 import React from 'react';
 
 function Navbar({ 
-  rol, 
+  rol,
+  usuario, 
   setVista, 
   modoExamenActivo, 
   intentarSalirExamen,
@@ -36,7 +37,7 @@ function Navbar({
           <div className="relative">
             <img 
               onClick={() => setMenuUsuarioAbierto(!menuUsuarioAbierto)}
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${nombreUsuario}`}
+              src={usuario?.foto_perfil || `https://api.dicebear.com/7.x/avataaars/svg?seed=${usuario?.nombre || 'Felix'}`}
               alt="Avatar" 
               className="w-9 h-9 rounded-full cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all object-cover bg-blue-100"
             />
@@ -48,7 +49,7 @@ function Navbar({
                 <button 
                   onClick={() => {
                     setVista('perfil');
-                    // Opcional: También podrías querer cerrar el menú aquí agregando setMenuUsuarioAbierto(false)
+                    setMenuUsuarioAbierto(false);
                   }} 
                   className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none"
                 >

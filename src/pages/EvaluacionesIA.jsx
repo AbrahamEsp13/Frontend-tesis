@@ -586,6 +586,7 @@ function EvaluacionesIA() {
       {/* ========================================== */}
       <Navbar 
         rol={rol}
+        usuario={usuario}
         setVista={setVista}
         modoExamenActivo={modoExamenActivo}
         intentarSalirExamen={intentarSalirExamen}
