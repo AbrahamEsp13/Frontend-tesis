@@ -652,6 +652,10 @@ function EvaluacionesIA() {
               />
             )}
 
+            {vista === 'perfil' && (
+                <VistaPerfil usuario={usuario} setUsuario={setUsuario} />
+            )}
+
             {vista === 'panel_estudiante' && rol === 'estudiante' && (
               <VistaPanelEstudiante 
                 listaHistorial={listaHistorial}
@@ -684,9 +688,6 @@ function EvaluacionesIA() {
               />
             )}
 
-            {vista === 'perfil' && (
-                <VistaPerfil usuario={usuario} setUsuario={setUsuario} />
-            )}
 
           </div>
         </main>

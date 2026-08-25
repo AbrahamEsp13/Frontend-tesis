@@ -70,6 +70,16 @@ function VistaPerfil({ usuario, setUsuario }) {
     }
   };
 
+  // --- PROTECCIÓN CONTRA PANTALLA EN BLANCO ---
+  if (!usuario) {
+    return (
+      <div className="flex justify-center items-center h-64 mt-10">
+        <span className="material-symbols-outlined animate-spin text-4xl text-blue-600">sync</span>
+        <p className="ml-3 text-gray-500 font-bold">Cargando perfil...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto mt-8">
       <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
@@ -105,15 +115,15 @@ function VistaPerfil({ usuario, setUsuario }) {
           {/* Botón de Editar / Guardar */}
           <div className="absolute top-6 right-6">
             {!modoEdicion ? (
-              <button onClick={() => setModoEdicion(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30">
+              <button onClick={() => setModoEdicion(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30 cursor-pointer">
                 <span className="material-symbols-outlined text-[20px]">edit</span> Editar Perfil
               </button>
             ) : (
               <div className="flex gap-3">
-                <button onClick={() => setModoEdicion(false)} className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30">
+                <button onClick={() => setModoEdicion(false)} className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30 cursor-pointer">
                   Cancelar
                 </button>
-                <button onClick={guardarCambios} disabled={cargando} className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50">
+                <button onClick={guardarCambios} disabled={cargando} className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50 cursor-pointer">
                   {cargando ? <span className="material-symbols-outlined animate-spin text-[20px]">sync</span> : <span className="material-symbols-outlined text-[20px]">save</span>}
                   Guardar
                 </button>
@@ -149,7 +159,7 @@ function VistaPerfil({ usuario, setUsuario }) {
                 <input 
                   type="email" 
                   value={usuario.correo} 
-                  disabled={true} // El correo no se cambia aquí por seguridad
+                  disabled={true} 
                   className="w-full p-3.5 bg-gray-100 border border-gray-200 rounded-xl outline-none text-gray-500 cursor-not-allowed font-medium"
                 />
               </div>
