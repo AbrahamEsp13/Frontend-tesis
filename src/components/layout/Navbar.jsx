@@ -56,10 +56,15 @@ function Navbar({
                   <span className="material-symbols-outlined text-lg">person</span> Ver perfil
                 </button>
                 
-                <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none">
-                  <span className="material-symbols-outlined text-lg">settings</span> Configuración
-                </button>
-                
+                <button 
+                    onClick={() => {
+                      setVista('configuracion');
+                      setMenuUsuarioAbierto(false);
+                    }} 
+                    className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none"
+                  >
+                    <span className="material-symbols-outlined text-lg">settings</span> Configuración
+                  </button>
                 <div className="border-t border-gray-100 my-1"></div>
                 
                 <button onClick={cerrarSesion} className="w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none">
