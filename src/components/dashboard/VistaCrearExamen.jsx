@@ -153,23 +153,24 @@ function VistaCrearExamen({
           </div>
 
           {/* FILA 3: Drag & Drop PDF */}
-          <label 
-            className="block w-full border-2 border-dashed border-gray-300 rounded-[2rem] p-12 text-center bg-white hover:bg-gray-50/80 transition-all relative shadow-sm group overflow-hidden cursor-pointer"
-            onDragOver={manejarDragOver}
-            onDrop={manejarDrop}
-          >
+          <div className="w-full border-2 border-dashed border-gray-300 rounded-[2rem] p-12 text-center bg-white hover:bg-gray-50/80 transition-all relative shadow-sm group overflow-hidden">
             
-            {/* Input invisible clásico (para cuando el usuario hace clic en lugar de arrastrar) */}
+            {/* EL INPUT NATIVO: Transparente y cubriendo todo el cuadro */}
             <input 
               type="file" 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" 
               accept=".pdf"
-              onChange={(e) => setArchivo(e.target.files[0])}
+              title=""
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  setArchivo(e.target.files[0]);
+                }
+              }}
             />
 
-            {/* Indicador visual de archivo */}
+            {/* INDICADOR VISUAL (Queda por debajo del input transparente) */}
             {archivo ? (
-              <div className="flex flex-col items-center justify-center relative z-0 pointer-events-none">
+              <div className="flex flex-col items-center justify-center relative z-10 pointer-events-none">
                 <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-100 group-hover:scale-105 transition-transform">
                   <span className="material-symbols-outlined text-4xl text-green-600">task</span>
                 </div>
@@ -177,7 +178,7 @@ function VistaCrearExamen({
                 <p className="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-lg truncate max-w-[250px] inline-block">{archivo.name}</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center relative z-0 pointer-events-none">
+              <div className="flex flex-col items-center justify-center relative z-10 pointer-events-none">
                 <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-100 group-hover:scale-105 transition-transform group-hover:bg-blue-50 group-hover:border-blue-100">
                   <span className="material-symbols-outlined text-4xl text-blue-600">upload_file</span>
                 </div>
@@ -186,7 +187,7 @@ function VistaCrearExamen({
                 <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">Tamaño máximo: 25MB</p>
               </div>
             )}
-          </label>
+          </div>
 
           {/* BOTÓN DE GENERAR */}
           <button 
