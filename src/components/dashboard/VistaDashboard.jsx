@@ -40,10 +40,10 @@ function VistaDashboard({ clonarCuestionario }) {
     <div className="max-w-6xl mx-auto text-left">
       
       {/* --- SECCIÓN HERO Y BÚSQUEDA CENTRADA --- */}
-      <div className="bg-white p-10 md:p-12 rounded-3xl border border-gray-100 shadow-sm mb-10 relative overflow-hidden text-center">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-[0.03] pointer-events-none text-blue-900">
-          <span className="material-symbols-outlined absolute -top-10 -left-10 text-[150px]">public</span>
-          <span className="material-symbols-outlined absolute bottom-10 -right-10 text-[120px]">school</span>
+      <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white p-10 md:p-12 rounded-3xl border border-gray-100 shadow-sm mb-10 relative overflow-hidden text-center">
+        <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white absolute top-0 left-0 w-full h-full overflow-hidden opacity-[0.03] pointer-events-none text-blue-900">
+          <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined absolute -top-10 -left-10 text-[150px]">public</span>
+          <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined absolute bottom-10 -right-10 text-[120px]">school</span>
         </div>
 
         <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white relative z-10 flex flex-col items-center">
