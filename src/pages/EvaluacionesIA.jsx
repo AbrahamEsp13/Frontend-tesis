@@ -59,11 +59,14 @@ function EvaluacionesIA() {
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuarioQuizAI");
     if (usuarioGuardado) {
-      const usuario = JSON.parse(usuarioGuardado);
-      setUsuario(usuarioParseado);
-      setRol(usuario.rol);
-      setCreditos(usuario.creditos_disponibles || 0);
-      setVista(usuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
+      // 1. Extraemos los datos y los metemos en una variable limpia
+      const datosUsuario = JSON.parse(usuarioGuardado);
+      
+      // 2. Repartimos la información en todos los estados de React
+      setUsuario(datosUsuario);
+      setRol(datosUsuario.rol);
+      setCreditos(datosUsuario.creditos_disponibles || 0);
+      setVista(datosUsuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
     }
   }, []);
 
