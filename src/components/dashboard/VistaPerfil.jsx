@@ -4,6 +4,9 @@ function VistaPerfil({ usuario, setUsuario }) {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+  
+  // Nuevo estado para mostrar/ocultar el menú de avatares
+  const [mostrarAvatares, setMostrarAvatares] = useState(false);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -13,6 +16,18 @@ function VistaPerfil({ usuario, setUsuario }) {
     especialidad: '',
     foto_perfil: ''
   });
+
+  // Colección de avatares predeterminados generados al instante (Robots, Pixel Art, Ilustraciones)
+  const avataresPredefinidos = [
+    "https://api.dicebear.com/7.x/bottts/svg?seed=Quiz",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=Inteligencia",
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Gamer",
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Code",
+    "https://api.dicebear.com/7.x/adventurer/svg?seed=Abraham",
+    "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
+    "https://api.dicebear.com/7.x/adventurer/svg?seed=Mochis",
+    "https://api.dicebear.com/7.x/adventurer/svg?seed=Sinaloa"
+  ];
 
   useEffect(() => {
     if (usuario) {
@@ -42,6 +57,11 @@ function VistaPerfil({ usuario, setUsuario }) {
     }
   };
 
+  const seleccionarAvatar = (url) => {
+    setFormData({ ...formData, foto_perfil: url });
+    setMostrarAvatares(false);
+  };
+
   const guardarCambios = async () => {
     setCargando(true);
     setMensaje({ texto: '', tipo: '' });
@@ -57,12 +77,12 @@ function VistaPerfil({ usuario, setUsuario }) {
 
       const data = await response.json();
       
-      // Actualizamos el estado global y el localStorage
       setUsuario(data.usuario);
       localStorage.setItem("usuarioQuizAI", JSON.stringify(data.usuario));
       
       setMensaje({ texto: '¡Perfil actualizado con éxito!', tipo: 'exito' });
       setModoEdicion(false);
+      setMostrarAvatares(false);
     } catch (error) {
       setMensaje({ texto: error.message, tipo: 'error' });
     } finally {
@@ -70,7 +90,6 @@ function VistaPerfil({ usuario, setUsuario }) {
     }
   };
 
-  // --- PROTECCIÓN CONTRA PANTALLA EN BLANCO ---
   if (!usuario) {
     return (
       <div className="flex justify-center items-center h-64 mt-10">
@@ -88,21 +107,51 @@ function VistaPerfil({ usuario, setUsuario }) {
         <div className="h-40 bg-gradient-to-r from-blue-600 to-indigo-700 relative">
           <div className="absolute -bottom-16 left-10 flex items-end gap-6">
             
-            {/* Foto de Perfil */}
+            {/* Contenedor de Foto de Perfil y Botones */}
             <div className="relative group">
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shadow-md">
                 {formData.foto_perfil ? (
-                  <img src={formData.foto_perfil} alt="Perfil" className="w-full h-full object-cover" />
+                  <img src={formData.foto_perfil} alt="Perfil" className="w-full h-full object-cover bg-white" />
                 ) : (
                   <span className="material-symbols-outlined text-6xl text-gray-400">person</span>
                 )}
               </div>
               
               {modoEdicion && (
-                <label className="absolute bottom-0 right-0 bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center text-white border-2 border-white cursor-pointer hover:bg-blue-700 transition-colors shadow-sm">
-                  <span className="material-symbols-outlined text-xl">photo_camera</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={manejarSubidaFoto} />
-                </label>
+                <>
+                  {/* Botón 1: Subir Foto (Derecha) */}
+                  <label className="absolute bottom-0 right-0 bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center text-white border-2 border-white cursor-pointer hover:bg-blue-700 transition-colors shadow-sm z-10 title='Subir foto'">
+                    <span className="material-symbols-outlined text-xl">photo_camera</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={manejarSubidaFoto} />
+                  </label>
+
+                  {/* Botón 2: Elegir Avatar (Izquierda) */}
+                  <button 
+                    onClick={() => setMostrarAvatares(!mostrarAvatares)}
+                    className="absolute bottom-0 left-0 bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center text-white border-2 border-white cursor-pointer hover:bg-indigo-600 transition-colors shadow-sm z-10"
+                    title="Elegir avatar"
+                  >
+                    <span className="material-symbols-outlined text-xl">sentiment_satisfied</span>
+                  </button>
+
+                  {/* Menú Desplegable de Avatares */}
+                  {mostrarAvatares && (
+                    <div className="absolute top-36 left-0 bg-white p-4 rounded-2xl shadow-xl border border-gray-100 w-72 z-50 animate-fade-in">
+                      <p className="text-xs font-bold text-gray-500 mb-3 text-center uppercase tracking-wider">Elige un avatar</p>
+                      <div className="grid grid-cols-4 gap-3">
+                        {avataresPredefinidos.map((url, index) => (
+                          <img 
+                            key={index} 
+                            src={url} 
+                            alt={`Avatar ${index}`} 
+                            onClick={() => seleccionarAvatar(url)}
+                            className="w-12 h-12 rounded-full cursor-pointer hover:scale-110 hover:ring-2 hover:ring-blue-500 transition-all bg-gray-50 p-1 border border-gray-100 shadow-sm"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -112,7 +161,7 @@ function VistaPerfil({ usuario, setUsuario }) {
             </div>
           </div>
           
-          {/* Botón de Editar / Guardar */}
+          {/* Botones Superiores (Editar / Guardar) */}
           <div className="absolute top-6 right-6">
             {!modoEdicion ? (
               <button onClick={() => setModoEdicion(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30 cursor-pointer">
@@ -120,7 +169,7 @@ function VistaPerfil({ usuario, setUsuario }) {
               </button>
             ) : (
               <div className="flex gap-3">
-                <button onClick={() => setModoEdicion(false)} className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30 cursor-pointer">
+                <button onClick={() => { setModoEdicion(false); setMostrarAvatares(false); }} className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold backdrop-blur-sm transition-all border border-white/30 cursor-pointer">
                   Cancelar
                 </button>
                 <button onClick={guardarCambios} disabled={cargando} className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50 cursor-pointer">
@@ -173,7 +222,7 @@ function VistaPerfil({ usuario, setUsuario }) {
                   value={formData.institucion} 
                   onChange={(e) => setFormData({...formData, institucion: e.target.value})}
                   disabled={!modoEdicion}
-                  placeholder="Ej. Facultad de Ingeniería Los Mochis"
+                  placeholder="Ej. Facultad de Ingeniería"
                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all disabled:opacity-70 disabled:cursor-not-allowed font-medium text-gray-800"
                 />
               </div>
