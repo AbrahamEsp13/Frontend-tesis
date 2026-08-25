@@ -115,12 +115,12 @@ function VistaDashboard({ clonarCuestionario }) {
                   {quiz.autor}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span className="flex items-center gap-1.5 font-medium">
+                <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white mt-auto pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white flex items-center gap-1.5 font-medium">
                     <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[18px] text-gray-400">format_list_numbered</span>
                     {quiz.num_preguntas} reactivos
                   </span>
-                  <span className="flex items-center gap-1.5 font-medium">
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white flex items-center gap-1.5 font-medium">
                     <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[18px] text-gray-400">article</span>
                     Ref: PDF
                   </span>
@@ -128,7 +128,7 @@ function VistaDashboard({ clonarCuestionario }) {
 
                 <button 
                   onClick={() => clonarCuestionario(quiz)} 
-                  className="w-full py-3.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 hover:border-blue-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer outline-none text-base"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white w-full py-3.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 hover:border-blue-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer outline-none text-base"
                 >
                   <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[20px]">content_copy</span>
                   Guardar y Editar
