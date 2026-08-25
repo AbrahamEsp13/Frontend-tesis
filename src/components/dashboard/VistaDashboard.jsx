@@ -46,7 +46,7 @@ function VistaDashboard({ clonarCuestionario }) {
           <span className="material-symbols-outlined absolute bottom-10 -right-10 text-[120px]">school</span>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center">
+        <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white relative z-10 flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-gray-950 m-0">
             Encuentra recursos educativos al instante
           </h1>
