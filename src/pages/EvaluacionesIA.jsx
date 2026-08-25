@@ -17,6 +17,7 @@ function EvaluacionesIA() {
   const navigate = useNavigate();
 
   // --- ESTADOS DE SESIÓN Y VISTAS ---
+  const [usuario, setUsuario] = useState(null);
   const [rol, setRol] = useState(null);
   const [creditos, setCreditos] = useState(0);
   const [vista, setVista] = useState('inicio'); 
@@ -59,6 +60,7 @@ function EvaluacionesIA() {
     const usuarioGuardado = localStorage.getItem("usuarioQuizAI");
     if (usuarioGuardado) {
       const usuario = JSON.parse(usuarioGuardado);
+      setUsuario(usuarioParseado);
       setRol(usuario.rol);
       setCreditos(usuario.creditos_disponibles || 0);
       setVista(usuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
@@ -75,6 +77,7 @@ function EvaluacionesIA() {
     localStorage.removeItem("usuarioQuizAI"); 
     navigate('/'); 
     setRol(null); 
+    setUsuario(null);
     setExamenActivo(null); 
     setMenuUsuarioAbierto(false);
   };
