@@ -46,11 +46,11 @@ function VistaDashboard({ clonarCuestionario }) {
           <span className="material-symbols-outlined absolute bottom-10 -right-10 text-[120px]">school</span>
         </div>
 
-        <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white relative z-10 flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-gray-950 m-0">
+        <div className="relative z-10 flex flex-col items-center">
+          <h1 className="dark:bg-gray-800 dark:border-gray-700 dark:text-white text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-gray-950 m-0">
             Encuentra recursos educativos al instante
           </h1>
-          <p className="text-gray-500 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-medium m-0 leading-relaxed">
+          <p className="dark:bg-gray-800 dark:border-gray-700 dark:text-white text-gray-500 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-medium m-0 leading-relaxed">
             Explora cientos de cuestionarios validados por la comunidad docente. Úsalos tal como están o adáptalos a tu clase en segundos.
           </p>
 
