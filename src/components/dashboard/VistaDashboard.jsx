@@ -83,25 +83,25 @@ function VistaDashboard({ clonarCuestionario }) {
         </div>
 
         {cargandoComunidad ? (
-          <div className="flex flex-col items-center gap-3 text-gray-500 font-bold p-16 justify-center bg-white rounded-3xl border border-gray-100 shadow-sm text-center">
-            <span className="material-symbols-outlined animate-spin text-4xl text-blue-600">sync</span>
+          <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white flex flex-col items-center gap-3 text-gray-500 font-bold p-16 justify-center bg-white rounded-3xl border border-gray-100 shadow-sm text-center">
+            <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined animate-spin text-4xl text-blue-600">sync</span>
             Conectando con la comunidad global...
           </div>
         ) : cuestionariosFiltrados.length === 0 ? (
-          <div className="bg-white border p-12 rounded-3xl shadow-sm text-center border-gray-100">
-            <span className="material-symbols-outlined text-5xl text-gray-300 mb-3 block">search_off</span>
+          <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white border p-12 rounded-3xl shadow-sm text-center border-gray-100">
+            <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-5xl text-gray-300 mb-3 block">search_off</span>
             <p className="text-gray-500 font-medium m-0">No se encontraron cuestionarios que coincidan con tu búsqueda.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cuestionariosFiltrados.map((quiz) => (
-              <div key={quiz.id} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full text-left">
+              <div key={quiz.id} className="dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full text-left">
                 
                 <div className="flex justify-between items-start mb-4">
-                  <span className="bg-blue-50 text-blue-700 text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider">
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-blue-50 text-blue-700 text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider">
                     {quiz.materia || "General"}
                   </span>
-                  <span className="material-symbols-outlined text-blue-500" title="Verificado">
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-blue-500" title="Verificado">
                     verified
                   </span>
                 </div>
@@ -111,17 +111,17 @@ function VistaDashboard({ clonarCuestionario }) {
                 </h3>
                 
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                  <span className="material-symbols-outlined text-[18px]">person</span>
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[18px]">person</span>
                   {quiz.autor}
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500 mb-4">
                   <span className="flex items-center gap-1.5 font-medium">
-                    <span className="material-symbols-outlined text-[18px] text-gray-400">format_list_numbered</span>
+                    <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[18px] text-gray-400">format_list_numbered</span>
                     {quiz.num_preguntas} reactivos
                   </span>
                   <span className="flex items-center gap-1.5 font-medium">
-                    <span className="material-symbols-outlined text-[18px] text-gray-400">article</span>
+                    <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[18px] text-gray-400">article</span>
                     Ref: PDF
                   </span>
                 </div>
@@ -130,7 +130,7 @@ function VistaDashboard({ clonarCuestionario }) {
                   onClick={() => clonarCuestionario(quiz)} 
                   className="w-full py-3.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-200 hover:border-blue-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer outline-none text-base"
                 >
-                  <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                  <span className="dark:bg-gray-800 dark:border-gray-700 dark:text-white material-symbols-outlined text-[20px]">content_copy</span>
                   Guardar y Editar
                 </button>
 
