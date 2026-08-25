@@ -401,7 +401,7 @@ function EvaluacionesIA() {
   }
 
   return (
-    <div className={`min-h-screen ${modoExamenActivo ? 'bg-white' : 'bg-[#f8f9fa]'} flex flex-col font-sans text-gray-800 relative`}>
+    <div className={`min-h-screen ${modoExamenActivo ? 'bg-white dark:bg-gray-900' : 'bg-[#f8f9fa] dark:bg-gray-900'} flex flex-col font-sans text-gray-800 dark:text-gray-100 relative transition-colors duration-300`}>
       
       {/* ========================================== */}
       {/* ZONA DE MODALES (DOCENTE Y GENERAL)        */}
@@ -610,7 +610,7 @@ function EvaluacionesIA() {
           creditos={creditos}
         />
 
-        <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] min-h-[calc(100vh-64px)] transition-all`}>
+        <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] dark:bg-gray-900 min-h-[calc(100vh-64px)] transition-all duration-300`}>
           <div className={`${modoExamenActivo ? 'w-full' : 'max-w-6xl'} mx-auto`}>
 
             {/* SECCIÓN DEL MERCADO COMUNITARIO (DASHBOARD DOCENTE) */}
