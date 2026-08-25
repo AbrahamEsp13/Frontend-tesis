@@ -106,7 +106,7 @@ function VistaDashboard({ clonarCuestionario }) {
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors m-0 h-14 line-clamp-2">
+                <h3 className="dark:bg-gray-800 dark:border-gray-700 dark:text-white text-xl font-bold text-gray-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors m-0 h-14 line-clamp-2">
                   {quiz.nombre_examen}
                 </h3>
                 
