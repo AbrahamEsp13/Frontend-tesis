@@ -12,6 +12,7 @@ import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';
 import VistaExamen from '../components/dashboard/VistaExamen';
 import VistaDashboard from '../components/dashboard/VistaDashboard';
 import VistaPerfil from '../components/dashboard/VistaPerfil';
+import VistaConfiguracion from '../components/dashboard/VistaConfiguracion';
 
 function EvaluacionesIA() {
   const navigate = useNavigate();
