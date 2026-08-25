@@ -13,18 +13,18 @@ function VistaHistorialDocente({
 }) {
   return (
     <div>
-      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+      <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
+          <h2 className="dark:bg-gray-800 dark:border-gray-700 dark:text-white text-3xl font-bold tracking-tight text-gray-900 mb-1">Historial de Exámenes</h2>
           <p className="text-gray-500">Administra tus evaluaciones, edítalas y publícalas a tus estudiantes.</p>
         </div>
-        <button onClick={() => setVista('nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-7 rounded-2xl shadow-lg shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2 border-none outline-none text-base">
+        <button onClick={() => setVista('nuevo')} className="dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-7 rounded-2xl shadow-lg shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2 border-none outline-none text-base">
           ✨ Crear Nuevo
         </button>
       </div>
 
       {cargandoHistorial ? (
-        <div className="flex flex-col items-center gap-4 text-gray-500 font-bold p-20 justify-center bg-white rounded-3xl border border-gray-100">
+        <div className="dark:bg-gray-800 dark:border-gray-700 dark:text-white flex flex-col items-center gap-4 text-gray-500 font-bold p-20 justify-center bg-white rounded-3xl border border-gray-100">
           <span className="material-symbols-outlined animate-spin text-5xl">sync</span> Cargando tus documentos...
         </div>
       ) : listaHistorial.map((registro) => (
@@ -32,7 +32,7 @@ function VistaHistorialDocente({
           <div className="flex justify-between items-start mb-2 gap-4">
             
             {/* TÍTULO PRINCIPAL */}
-            <h3 className="m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
+            <h3 className="dark:bg-gray-800 dark:border-gray-700 dark:text-white m-0 text-xl font-bold text-gray-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-blue-500">quiz</span> {registro.nombre_examen || "Examen sin título"}
             </h3>
             
