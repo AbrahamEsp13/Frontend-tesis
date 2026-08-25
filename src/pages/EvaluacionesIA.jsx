@@ -628,6 +628,7 @@ function EvaluacionesIA() {
                 setMateria={setMateria}             
                 numPreguntas={numPreguntas}
                 setNumPreguntas={setNumPreguntas}
+                archivo={archivo}
                 setArchivo={setArchivo}
                 generarCuestionario={generarCuestionario}
                 cargando={cargando}
