@@ -20,6 +20,28 @@ function VistaCrearExamen({
     "Filosofía", "Artes", "Educación Física", "Otro"
   ];
 
+  // ==========================================
+  // FUNCIONES PARA FORZAR EL DRAG & DROP
+  // ==========================================
+  const manejarDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const manejarDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Capturamos el archivo que el usuario soltó
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const archivoSoltado = e.dataTransfer.files[0];
+      // Verificamos que sí sea un PDF
+      if (archivoSoltado.type === "application/pdf" || archivoSoltado.name.toLowerCase().endsWith('.pdf')) {
+        setArchivo(archivoSoltado);
+      }
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-start mt-4">
       
@@ -131,9 +153,13 @@ function VistaCrearExamen({
           </div>
 
           {/* FILA 3: Drag & Drop PDF */}
-          <div className="block w-full border-2 border-dashed border-gray-300 rounded-[2rem] p-12 text-center bg-white hover:bg-gray-50/80 transition-all relative shadow-sm group overflow-hidden">
+          <label 
+            className="block w-full border-2 border-dashed border-gray-300 rounded-[2rem] p-12 text-center bg-white hover:bg-gray-50/80 transition-all relative shadow-sm group overflow-hidden cursor-pointer"
+            onDragOver={manejarDragOver}
+            onDrop={manejarDrop}
+          >
             
-            {/* Input invisible que cubre toda la caja para permitir Drag & Drop */}
+            {/* Input invisible clásico (para cuando el usuario hace clic en lugar de arrastrar) */}
             <input 
               type="file" 
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
@@ -143,7 +169,7 @@ function VistaCrearExamen({
 
             {/* Indicador visual de archivo */}
             {archivo ? (
-              <div className="flex flex-col items-center justify-center relative z-0">
+              <div className="flex flex-col items-center justify-center relative z-0 pointer-events-none">
                 <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-100 group-hover:scale-105 transition-transform">
                   <span className="material-symbols-outlined text-4xl text-green-600">task</span>
                 </div>
@@ -151,7 +177,7 @@ function VistaCrearExamen({
                 <p className="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-lg truncate max-w-[250px] inline-block">{archivo.name}</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center relative z-0">
+              <div className="flex flex-col items-center justify-center relative z-0 pointer-events-none">
                 <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-100 group-hover:scale-105 transition-transform group-hover:bg-blue-50 group-hover:border-blue-100">
                   <span className="material-symbols-outlined text-4xl text-blue-600">upload_file</span>
                 </div>
@@ -160,7 +186,7 @@ function VistaCrearExamen({
                 <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">Tamaño máximo: 25MB</p>
               </div>
             )}
-          </div>
+          </label>
 
           {/* BOTÓN DE GENERAR */}
           <button 
