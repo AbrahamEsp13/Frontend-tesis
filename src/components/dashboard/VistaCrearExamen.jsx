@@ -20,28 +20,6 @@ function VistaCrearExamen({
     "Filosofía", "Artes", "Educación Física", "Otro"
   ];
 
-  // ==========================================
-  // FUNCIONES PARA FORZAR EL DRAG & DROP
-  // ==========================================
-  const manejarDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const manejarDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Capturamos el archivo que el usuario soltó
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const archivoSoltado = e.dataTransfer.files[0];
-      // Verificamos que sí sea un PDF
-      if (archivoSoltado.type === "application/pdf" || archivoSoltado.name.toLowerCase().endsWith('.pdf')) {
-        setArchivo(archivoSoltado);
-      }
-    }
-  };
-
   return (
     <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-start mt-4">
       
