@@ -130,40 +130,47 @@ function VistaCrearExamen({
             </div>
           </div>
 
-          {/* FILA 3: Drag & Drop PDF */}
-          <div className="w-full border-2 border-dashed border-gray-300 rounded-[2rem] p-12 text-center bg-white hover:bg-gray-50/80 transition-all relative shadow-sm group overflow-hidden">
+          {/* FILA 3: Drag & Drop PDF (ESTRUCTURA ORIGINAL) */}
+          <div className="bg-white p-10 rounded-3xl shadow-sm border-2 border-dashed border-gray-300 flex flex-col items-center text-center group hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer relative">
             
-            {/* EL INPUT NATIVO: Transparente y cubriendo todo el cuadro */}
+            {archivo ? (
+              <>
+                <span className="material-symbols-outlined text-7xl text-green-500 mb-5">task</span>
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-center gap-3 w-full justify-center z-20 relative">
+                  <span className="material-symbols-outlined text-red-500 text-3xl">picture_as_pdf</span>
+                  <span className="font-bold text-blue-800 text-lg truncate max-w-[200px]">{archivo.name}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-7xl text-gray-400 group-hover:text-blue-500 transition-colors mb-5">
+                  cloud_upload
+                </span>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Sube tu PDF aquí</h3>
+                <p className="text-gray-500 mb-6 m-0">o haz clic para explorar tus archivos</p>
+                <p className="text-xs text-gray-400 mt-5 m-0">Solo archivos PDF (Máx. 25MB)</p>
+              </>
+            )}
+
+            {/* INPUT ORIGINAL (Transparente, cubre todo el div) */}
             <input 
               type="file" 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" 
-              accept=".pdf"
-              title=""
+              accept=".pdf" 
+              id="fileUpload"
+              disabled={cargando}
               onChange={(e) => {
                 if (e.target.files && e.target.files.length > 0) {
                   setArchivo(e.target.files[0]);
                 }
-              }}
+              }} 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
             />
-
-            {/* INDICADOR VISUAL (Queda por debajo del input transparente) */}
-            {archivo ? (
-              <div className="flex flex-col items-center justify-center relative z-10 pointer-events-none">
-                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-100 group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-4xl text-green-600">task</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">¡Archivo cargado listo!</h3>
-                <p className="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-lg truncate max-w-[250px] inline-block">{archivo.name}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center relative z-10 pointer-events-none">
-                <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-100 group-hover:scale-105 transition-transform group-hover:bg-blue-50 group-hover:border-blue-100">
-                  <span className="material-symbols-outlined text-4xl text-blue-600">upload_file</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Sube tu PDF aquí</h3>
-                <p className="text-gray-500 mb-8">O haz clic para buscar en tu dispositivo</p>
-                <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">Tamaño máximo: 25MB</p>
-              </div>
+            
+            {/* BOTÓN ORIGINAL VINCULADO AL INPUT */}
+            {!archivo && (
+               <label htmlFor="fileUpload" className="mt-6 py-3 px-8 bg-gray-100 group-hover:bg-blue-600 text-gray-700 group-hover:text-white font-bold rounded-full transition-colors cursor-pointer shadow-sm text-sm z-20 relative">
+                 Seleccionar archivo
+               </label>
             )}
           </div>
 
