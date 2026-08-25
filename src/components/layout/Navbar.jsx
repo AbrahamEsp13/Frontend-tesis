@@ -44,6 +44,7 @@ function Navbar({
             {menuUsuarioAbierto && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
                 <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none">
+                  onClick={() => setVista('perfil')}
                   <span className="material-symbols-outlined text-lg">person</span> Ver perfil
                 </button>
                 <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer flex items-center gap-3 border-none bg-transparent outline-none">

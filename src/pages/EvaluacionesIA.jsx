@@ -11,6 +11,7 @@ import VistaHistorialDocente from '../components/dashboard/VistaHistorialDocente
 import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';
 import VistaExamen from '../components/dashboard/VistaExamen';
 import VistaDashboard from '../components/dashboard/VistaDashboard';
+import VistaPerfil from './VistaPerfil';
 
 function EvaluacionesIA() {
   const navigate = useNavigate();
@@ -681,6 +682,10 @@ function EvaluacionesIA() {
                 modoExamenActivo={modoExamenActivo}
                 reiniciarExamen={reiniciarExamen}
               />
+            )}
+
+            {vista === 'perfil' && (
+                <VistaPerfil usuario={usuario} setUsuario={setUsuario} />
             )}
 
           </div>
