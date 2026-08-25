@@ -64,7 +64,7 @@ function VistaDashboard({ clonarCuestionario }) {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Ej. Matemáticas, Programación, Historia de México..." 
-              className="w-full pl-14 pr-32 py-5 rounded-2xl text-gray-900 font-medium text-lg outline-none border border-gray-200 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 bg-white transition-all shadow-sm"
+              className="dark:bg-gray-800 dark:border-gray-700 dark:text-white w-full pl-14 pr-32 py-5 rounded-2xl text-gray-900 font-medium text-lg outline-none border border-gray-200 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 bg-white transition-all shadow-sm"
             />
             <button className="absolute inset-y-2 right-2 bg-gray-900 hover:bg-black text-white px-8 rounded-xl font-bold transition-colors shadow-sm cursor-pointer outline-none border-none text-base">
               Buscar
