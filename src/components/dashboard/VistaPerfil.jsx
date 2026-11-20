@@ -1,4 +1,4 @@
-import { API_URL } from '../../config';
+import { actualizarPerfil } from '../../api/usuarios';
 import React, { useState, useEffect } from 'react';
 
 function VistaPerfil({ usuario, setUsuario }) {
@@ -68,16 +68,8 @@ function VistaPerfil({ usuario, setUsuario }) {
     setMensaje({ texto: '', tipo: '' });
 
     try {
-      const response = await fetch(`${API_URL}/api/usuarios/${usuario.id}/perfil`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      const data = await actualizarPerfil(usuario.id, formData);
 
-      if (!response.ok) throw new Error('Error al guardar el perfil');
-
-      const data = await response.json();
-      
       setUsuario(data.usuario);
       localStorage.setItem("usuarioQuizAI", JSON.stringify(data.usuario));
       

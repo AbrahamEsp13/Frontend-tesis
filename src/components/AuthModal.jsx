@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import { iniciarSesion, registrarUsuario } from '../api/auth';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -27,14 +27,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
         try {
             if (isLogin) {
                 // --- LÓGICA DE INICIAR SESIÓN ---
-                const response = await fetch(`${API_URL}/api/auth/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ correo, password })
-                });
-                
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || "Error al iniciar sesión");
+                const data = await iniciarSesion(correo, password);
 
                 // Quitamos el alert y guardamos en memoria
                 localStorage.setItem("usuarioQuizAI", JSON.stringify(data.usuario));
@@ -44,14 +37,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
 
             } else {
                 // --- LÓGICA DE REGISTRO ---
-                const response = await fetch(`${API_URL}/api/auth/register`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nombre, correo, password, rol })
-                });
-                
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || "Error al registrar");
+                await registrarUsuario({ nombre, correo, password, rol });
 
                 // Reemplazamos el alert con nuestro feedback verde
                 setFeedback({ tipo: 'exito', texto: "🎉 ¡Cuenta creada! Ya puedes iniciar sesión." });

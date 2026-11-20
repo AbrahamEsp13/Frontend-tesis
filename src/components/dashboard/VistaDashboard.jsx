@@ -1,4 +1,4 @@
-import { API_URL } from '../../config';
+import { listarComunidad } from '../../api/cuestionarios';
 import React, { useState, useEffect } from 'react';
 
 function VistaDashboard({ clonarCuestionario }) {
@@ -10,11 +10,7 @@ function VistaDashboard({ clonarCuestionario }) {
   const cargarCuestionariosComunidad = async () => {
     setCargandoComunidad(true);
     try {
-      const respuesta = await fetch(`${API_URL}/api/comunidad/cuestionarios`);
-      if (respuesta.ok) {
-        const resultado = await respuesta.json();
-        setCuestionariosComunidad(resultado.data || []);
-      }
+      setCuestionariosComunidad(await listarComunidad());
     } catch (error) {
       console.error("Error al cargar la comunidad:", error);
     } finally {

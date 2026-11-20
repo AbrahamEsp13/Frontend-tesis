@@ -1,4 +1,4 @@
-import { API_URL } from '../config';
+import * as api from '../api/cuestionarios';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,12 +96,7 @@ function EvaluacionesIA() {
       const usuarioString = localStorage.getItem("usuarioQuizAI");
       if (!usuarioString) return;
       const usuario = JSON.parse(usuarioString);
-      
-      const url = `${API_URL}/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
-      const respuesta = await fetch(url);
-      if (!respuesta.ok) throw new Error("Fallo en servidor");
-      const resultado = await respuesta.json();
-      setListaHistorial(resultado.data || []); 
+      setListaHistorial(await api.listarCuestionarios(usuario.id, usuario.rol));
     } catch {
       setListaHistorial([]);
     } finally {
@@ -125,23 +120,10 @@ function EvaluacionesIA() {
     }
     setCargando(true); setError(null);
     const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
-    const formData = new FormData();
-    formData.append("nombre_examen", nombreExamen); 
-    formData.append("materia", materia); 
-    formData.append("archivo", archivo);
-    formData.append("usuario_id", usuario.id); 
-    formData.append("num_preguntas", numPreguntas);
 
     try {
-      const respuesta = await fetch(`${API_URL}/api/generar-cuestionario`, { method: "POST", body: formData });
-      
-      // --- ESTA ES LA MAGIA QUE LEE EL ERROR DEL BACKEND ---
-      if (!respuesta.ok) {
-        const errorData = await respuesta.json().catch(() => ({}));
-        // Si el backend mandó un 'detail' (como el de los créditos), lo usamos. Si no, usamos un genérico.
-        throw new Error(errorData.detail || "Fallo en el servidor al conectar con la IA.");
-      }
-      // -----------------------------------------------------
+      // Si el backend responde con error (p. ej. créditos agotados), api lanza su 'detail'
+      await api.generarCuestionario({ archivo, usuarioId: usuario.id, numPreguntas, nombreExamen, materia });
 
       setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
       
@@ -172,18 +154,23 @@ function EvaluacionesIA() {
 
   const abrirModalPublicar = (id) => { setModalPublicar({ abierto: true, id: id }); };
   const confirmarPublicacion = async () => {
+    const id = modalPublicar.id;
+    setModalPublicar({ abierto: false, id: null });
     try {
-      await fetch(`${API_URL}/api/cuestionarios/${modalPublicar.id}/publicar`, { method: "PUT" });
-      setModalPublicar({ abierto: false, id: null });
-      cargarHistorial(); 
-    } catch (err) { console.error(err); }
+      await api.publicarCuestionario(id);
+      cargarHistorial();
+    } catch (err) {
+      setModalInfo({ abierto: true, titulo: 'No se pudo publicar', mensaje: err.message, tipo: 'error' });
+    }
   };
-  
+
   const despublicarCuestionario = async (id) => {
     try {
-      await fetch(`${API_URL}/api/cuestionarios/${id}/despublicar`, { method: "PUT" });
-      cargarHistorial(); 
-    } catch (err) { console.error(err); }
+      await api.despublicarCuestionario(id);
+      cargarHistorial();
+    } catch (err) {
+      setModalInfo({ abierto: true, titulo: 'No se pudo ocultar', mensaje: err.message, tipo: 'error' });
+    }
   };
 
   const eliminarExamen = (id) => {
@@ -194,11 +181,11 @@ function EvaluacionesIA() {
     const id = modalConfirmarEliminar.id;
     setModalConfirmarEliminar({ abierto: false, id: null });
     try {
-      await fetch(`${API_URL}/api/cuestionarios/${id}`, { method: 'DELETE' });
-      cargarHistorial(); 
+      await api.eliminarCuestionario(id);
+      cargarHistorial();
       setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'El examen fue borrado permanentemente de tu historial.', tipo: 'exito' });
-    } catch { 
-      setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo eliminar el examen.', tipo: 'error' });
+    } catch (err) {
+      setModalInfo({ abierto: true, titulo: 'No se pudo eliminar el examen', mensaje: err.message, tipo: 'error' });
     }
   };
 
@@ -247,7 +234,7 @@ function EvaluacionesIA() {
 
   const guardarEdicionEnBackend = async () => {
     try {
-      await fetch(`${API_URL}/api/cuestionarios/${examenActivo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json }) });
+      await api.actualizarPreguntas(examenActivo.id, examenActivo.preguntas_json);
       setModalInfo({ abierto: true, titulo: '¡Cambios Guardados!', mensaje: 'El examen se ha actualizado correctamente.', tipo: 'exito' });
       setModoEdicion(false); 
       cargarHistorial(); 
@@ -258,47 +245,35 @@ function EvaluacionesIA() {
 
   const compartirEnComunidad = async (id) => {
     try {
-      const respuesta = await fetch(`${API_URL}/api/cuestionarios/${id}/compartir`, { method: "PUT" });
-      if (respuesta.ok) {
-        setModalInfo({ 
-          abierto: true, 
-          titulo: '¡Examen Compartido!', 
-          mensaje: 'Tu evaluación ahora está disponible en el Mercado Comunitario. ¡Gracias por aportar a otros docentes!', 
-          tipo: 'exito' 
-        });
-        cargarHistorial(); 
-      }
-    } catch (error) {
-      console.error(error);
-      setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo compartir en la comunidad.', tipo: 'error' });
+      await api.compartirCuestionario(id);
+      setModalInfo({
+        abierto: true,
+        titulo: '¡Examen Compartido!',
+        mensaje: 'Tu evaluación ahora está disponible en el Mercado Comunitario. ¡Gracias por aportar a otros docentes!',
+        tipo: 'exito'
+      });
+      cargarHistorial();
+    } catch (err) {
+      setModalInfo({ abierto: true, titulo: 'No se pudo compartir en la comunidad', mensaje: err.message, tipo: 'error' });
     }
   };
 
   const clonarCuestionarioDelDashboard = async (cuestionarioSeleccionado) => {
-    setCargandoHistorial(true);
     const usuarioString = localStorage.getItem("usuarioQuizAI");
     if (!usuarioString) return;
     const usuario = JSON.parse(usuarioString);
+    setCargandoHistorial(true);
 
     try {
-      const respuesta = await fetch(`${API_URL}/api/cuestionarios/${cuestionarioSeleccionado.id}/clonar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario_id: usuario.id })
+      await api.clonarCuestionario(cuestionarioSeleccionado.id, usuario.id);
+      setModalInfo({
+        abierto: true,
+        titulo: '¡Examen Guardado!',
+        mensaje: `Se ha creado una copia en tu historial personal con el sufijo (Copia). Ya puedes modificarlo libremente.`,
+        tipo: 'exito'
       });
-
-      if (respuesta.ok) {
-        setModalInfo({ 
-          abierto: true, 
-          titulo: '¡Examen Guardado!', 
-          mensaje: `Se ha creado una copia en tu historial personal con el sufijo (Copia). Ya puedes modificarlo libremente.`, 
-          tipo: 'exito' 
-        });
-        setVista('historial');
-        cargarHistorial();
-      } else {
-        throw new Error("No se pudo clonar el recurso comunitario.");
-      }
+      setVista('historial');
+      cargarHistorial();
     } catch (err) {
       setModalInfo({ abierto: true, titulo: 'Error al clonar', mensaje: err.message, tipo: 'error' });
     } finally {
