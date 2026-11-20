@@ -99,7 +99,7 @@ function EvaluacionesIA() {
       if (!respuesta.ok) throw new Error("Fallo en servidor");
       const resultado = await respuesta.json();
       setListaHistorial(resultado.data || []); 
-    } catch (err) {
+    } catch {
       setListaHistorial([]);
     } finally {
       setCargandoHistorial(false);
@@ -194,7 +194,7 @@ function EvaluacionesIA() {
       await fetch(`${API_URL}/api/cuestionarios/${id}`, { method: 'DELETE' });
       cargarHistorial(); 
       setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'El examen fue borrado permanentemente de tu historial.', tipo: 'exito' });
-    } catch (err) { 
+    } catch { 
       setModalInfo({ abierto: true, titulo: 'Error', mensaje: 'No se pudo eliminar el examen.', tipo: 'error' });
     }
   };

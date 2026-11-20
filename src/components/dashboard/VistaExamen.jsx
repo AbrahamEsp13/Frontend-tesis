@@ -15,7 +15,6 @@ function VistaExamen({
   seleccionarOpcion,
   agregarPreguntaVacia,
   guardarEdicionEnBackend,
-  setVista,
   intentarEntregarEvaluacion,
   salirDelExamen,
   modoExamenActivo,
@@ -25,12 +24,16 @@ function VistaExamen({
   // --- LÓGICA DEL CRONÓMETRO ---
   const [tiempoSegundos, setTiempoSegundos] = useState(0);
 
-  // Reiniciar el reloj si se reintenta el examen (cuando se limpian las respuestas)
-  useEffect(() => {
+  // Reiniciar el reloj si se reintenta el examen (cuando se limpian las respuestas).
+  // Se ajusta el estado durante el render al cambiar las props, en lugar de usar un efecto:
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [propsPrevias, setPropsPrevias] = useState({ examenTerminado, respuestasUsuario });
+  if (propsPrevias.examenTerminado !== examenTerminado || propsPrevias.respuestasUsuario !== respuestasUsuario) {
+    setPropsPrevias({ examenTerminado, respuestasUsuario });
     if (!examenTerminado && Object.keys(respuestasUsuario).length === 0) {
       setTiempoSegundos(0);
     }
-  }, [examenTerminado, respuestasUsuario]);
+  }
 
   // Ejecutar el reloj solo si es estudiante, está en el examen y no ha terminado
   useEffect(() => {

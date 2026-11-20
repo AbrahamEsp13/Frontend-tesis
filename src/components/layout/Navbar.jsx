@@ -10,9 +10,6 @@ function Navbar({
   setMenuUsuarioAbierto,
   cerrarSesion
 }) {
-  // Obtenemos el nombre del usuario para el avatar
-  const usuarioLocal = localStorage.getItem("usuarioQuizAI");
-  const nombreUsuario = usuarioLocal ? JSON.parse(usuarioLocal).nombre : "Felix";
 
   return (
     <nav className={`fixed top-0 left-0 right-0 h-16 ${modoExamenActivo ? 'bg-white' : 'bg-white/90 backdrop-blur-md'} z-50 flex items-center justify-between px-8 ${modoExamenActivo ? 'border-none' : 'border-b border-gray-200'}`}>

@@ -2,27 +2,21 @@ import React, { useState, useEffect } from 'react';
 
 function VistaConfiguracion({ usuario }) {
   const [pestanaActiva, setPestanaActiva] = useState('apariencia');
-  const [modoOscuro, setModoOscuro] = useState(false);
-
   // Al cargar, revisamos si el usuario ya tenía el modo oscuro activado
+  const [modoOscuro, setModoOscuro] = useState(() =>
+    localStorage.getItem('temaQuizAI') === 'dark' || document.documentElement.classList.contains('dark')
+  );
+
+  // Mantiene la clase 'dark' del <html> sincronizada con el estado
   useEffect(() => {
-    if (localStorage.getItem('temaQuizAI') === 'dark' || document.documentElement.classList.contains('dark')) {
-      setModoOscuro(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
+    document.documentElement.classList.toggle('dark', modoOscuro);
+  }, [modoOscuro]);
 
   // Función mágica que cambia el tema
   const alternarTema = () => {
-    if (modoOscuro) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('temaQuizAI', 'light');
-      setModoOscuro(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('temaQuizAI', 'dark');
-      setModoOscuro(true);
-    }
+    const nuevoModo = !modoOscuro;
+    localStorage.setItem('temaQuizAI', nuevoModo ? 'dark' : 'light');
+    setModoOscuro(nuevoModo);
   };
 
   return (

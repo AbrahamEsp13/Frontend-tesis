@@ -6,7 +6,7 @@ function VistaCrearExamen({
   numPreguntas, setNumPreguntas, 
   archivo, setArchivo, 
   generarCuestionario, 
-  cargando, error, 
+  cargando,
   creditos 
 }) {
   
