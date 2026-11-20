@@ -1,7 +1,14 @@
-import * as api from '../api/cuestionarios';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useSesion } from '../context/sesion';
+
+// --- LÓGICA (hooks y utilidades) ---
+import { useHistorial } from '../hooks/useHistorial';
+import { useEditorExamen } from '../hooks/useEditorExamen';
+import { useIntentoExamen } from '../hooks/useIntentoExamen';
+import { useGenerador } from '../hooks/useGenerador';
+import { calcularCalificacion, todasRespondidas } from '../utils/calificar';
+import { exportarExamen } from '../utils/exportarExamen';
 
 // --- COMPONENTES MODULARES (LAYOUT) ---
 import Navbar from '../components/layout/Navbar';
@@ -23,43 +30,39 @@ function EvaluacionesIA() {
   const navigate = useNavigate();
 
   // --- SESIÓN (compartida por toda la app) ---
-  const { usuario, rol, creditos, cerrarSesion: terminarSesion, actualizarUsuario, refrescarCreditos } = useSesion();
+  const { usuario, rol, creditos, cerrarSesion: terminarSesion, refrescarCreditos } = useSesion();
 
-  // --- ESTADOS DE VISTAS ---
+  // --- NAVEGACIÓN Y UI GENERAL ---
   const [vista, setVista] = useState(rol === 'docente' ? 'dashboard' : 'panel_estudiante');
-  const [listaHistorial, setListaHistorial] = useState([]);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-  
-  // Estados para UI general
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
-  
-  // --- ESTADOS PARA MODALES (DOCENTE Y GENERAL) ---
-  const [modalPublicar, setModalPublicar] = useState({ abierto: false, id: null });
-  const [modalAlertaEdicion, setModalAlertaEdicion] = useState(false);
 
+  // --- MODALES ---
   const [modalInfo, setModalInfo] = useState({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' });
+  const [modalPublicar, setModalPublicar] = useState({ abierto: false, id: null });
   const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState({ abierto: false, id: null });
   const [modalConfirmarEliminarPregunta, setModalConfirmarEliminarPregunta] = useState({ abierto: false, index: null });
-
-  // --- ESTADOS PARA MODALES (ESTUDIANTE) ---
+  const [modalAlertaEdicion, setModalAlertaEdicion] = useState(false);
   const [modalConfirmarInicio, setModalConfirmarInicio] = useState({ abierto: false, registro: null });
   const [modalAdvertenciaSalida, setModalAdvertenciaSalida] = useState(false);
   const [modalConfirmarEntrega, setModalConfirmarEntrega] = useState(false);
   const [modalConfirmarReinicio, setModalConfirmarReinicio] = useState(false);
 
-  // Estados del generador
-  const [nombreExamen, setNombreExamen] = useState(''); 
-  const [materia, setMateria] = useState(''); 
-  const [archivo, setArchivo] = useState(null);
-  const [numPreguntas, setNumPreguntas] = useState(5);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState(null);
+  /** Muestra el modal de aviso. tipo: 'exito' | 'error' | 'warning'. */
+  const notificar = useCallback((titulo, mensaje, tipo = 'exito') => {
+    setModalInfo({ abierto: true, titulo, mensaje, tipo });
+  }, []);
 
-  // Estados del Examen
-  const [examenActivo, setExamenActivo] = useState(null);
-  const [respuestasUsuario, setRespuestasUsuario] = useState({});
-  const [examenTerminado, setExamenTerminado] = useState(false);
-  const [modoEdicion, setModoEdicion] = useState(false);
+  // --- LÓGICA (hooks) ---
+  const historial = useHistorial({ usuarioId: usuario?.id, rol, notificar });
+  const editor = useEditorExamen({ notificar, onGuardado: historial.cargar });
+  const intento = useIntentoExamen();
+  const generador = useGenerador({
+    notificar,
+    onGenerado: () => { setVista('historial'); historial.cargar(); },
+  });
+
+  const examenActivo = editor.examen;
+  const modoExamenActivo = vista === 'examen' && examenActivo && !intento.terminado && rol === 'estudiante';
 
   // --- EFECTOS ---
   // Los créditos se regeneran cada día en el backend: el docente consulta su saldo
@@ -69,286 +72,85 @@ function EvaluacionesIA() {
     if (rol === 'docente' && (vista === 'dashboard' || vista === 'nuevo')) refrescarCreditos();
   }, [rol, vista, refrescarCreditos]);
 
-  const usuarioId = usuario?.id;
-
-  const cargarHistorial = useCallback(async () => {
-    if (!usuarioId) return;
-    setCargandoHistorial(true);
-    try {
-      setListaHistorial(await api.listarCuestionarios(usuarioId, rol));
-    } catch {
-      setListaHistorial([]);
-    } finally {
-      setCargandoHistorial(false);
-    }
-  }, [usuarioId, rol]);
-
+  const cargarHistorial = historial.cargar;
   useEffect(() => {
-    if (vista === 'historial' || vista === 'panel_estudiante') {
-      cargarHistorial();
-    }
+    if (vista === 'historial' || vista === 'panel_estudiante') cargarHistorial();
   }, [vista, cargarHistorial]);
 
   const cerrarSesion = () => {
     navigate('/');
     terminarSesion();
-    setExamenActivo(null);
+    editor.cerrar();
     setMenuUsuarioAbierto(false);
   };
 
-  // --- LÓGICA DEL DOCENTE ---
-  const generarCuestionario = async () => {
-    if (!nombreExamen.trim()) { 
-      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, dale un título a tu examen.', tipo: 'warning' });
-      return;
-    }
-    if (!materia) { 
-      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, selecciona una materia.', tipo: 'warning' });
-      return;
-    }
-    if (!archivo) {
-      setModalInfo({ abierto: true, titulo: 'Atención', mensaje: 'Por favor, selecciona un archivo PDF primero.', tipo: 'warning' });
-      return;
-    }
-    setCargando(true); setError(null);
-
-    try {
-      // Si el backend responde con error (p. ej. créditos agotados), api lanza su 'detail'
-      const resultado = await api.generarCuestionario({ archivo, usuarioId: usuario.id, numPreguntas, nombreExamen, materia });
-
-      setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
-
-      // El backend devuelve el saldo restante; si no viene, descontamos uno localmente
-      actualizarUsuario({ creditos_disponibles: resultado?.creditos_disponibles ?? creditos - 1 });
-
-      setNombreExamen(''); 
-      setMateria('');
-      setArchivo(null);
-      setVista('historial'); 
-      cargarHistorial(); 
-      
-    } catch (err) {
-      // 403 = créditos agotados: sincronizamos el saldo para que el formulario se bloquee
-      if (err.status === 403) refrescarCreditos();
-      // MOSTRAMOS EL MENSAJE DINÁMICO EN EL MODAL
-      setModalInfo({
-        abierto: true, 
-        titulo: err.message.includes('créditos') ? 'Créditos Agotados' : 'Error en la Generación', 
-        mensaje: err.message, 
-        tipo: err.message.includes('créditos') ? 'warning' : 'error' 
-      });
-    } finally { 
-      setCargando(false); 
-    }
-  };
-
-  const abrirModalPublicar = (id) => { setModalPublicar({ abierto: true, id: id }); };
-  const confirmarPublicacion = async () => {
+  // --- HISTORIAL (DOCENTE) ---
+  const confirmarPublicacion = () => {
     const id = modalPublicar.id;
     setModalPublicar({ abierto: false, id: null });
-    try {
-      await api.publicarCuestionario(id);
-      cargarHistorial();
-    } catch (err) {
-      setModalInfo({ abierto: true, titulo: 'No se pudo publicar', mensaje: err.message, tipo: 'error' });
-    }
+    historial.publicar(id);
   };
 
-  const despublicarCuestionario = async (id) => {
-    try {
-      await api.despublicarCuestionario(id);
-      cargarHistorial();
-    } catch (err) {
-      setModalInfo({ abierto: true, titulo: 'No se pudo ocultar', mensaje: err.message, tipo: 'error' });
-    }
-  };
-
-  const eliminarExamen = (id) => {
-    setModalConfirmarEliminar({ abierto: true, id: id });
-  };
-
-  const confirmarEliminacionExamen = async () => {
+  const confirmarEliminacionExamen = () => {
     const id = modalConfirmarEliminar.id;
     setModalConfirmarEliminar({ abierto: false, id: null });
-    try {
-      await api.eliminarCuestionario(id);
-      cargarHistorial();
-      setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'El examen fue borrado permanentemente de tu historial.', tipo: 'exito' });
-    } catch (err) {
-      setModalInfo({ abierto: true, titulo: 'No se pudo eliminar el examen', mensaje: err.message, tipo: 'error' });
-    }
+    historial.eliminar(id);
   };
 
-  const exportarExamen = (registro) => {
-    const titulo = registro.nombre_examen || registro.nombre_documento;
-    let contenido = `📝 EXAMEN: ${titulo}\nGenerado por QuizAI\n========================\n\n`;
-    registro.preguntas_json.forEach((p, index) => {
-      contenido += `${index + 1}. ${p.pregunta}\n`;
-      p.opciones.forEach(op => { contenido += `   [  ] ${op}\n`; });
-      const valor = p.puntuacion || 1; // Exportamos con el valor de los puntos
-      contenido += `\n   ✅ CLAVE: ${p.respuesta_correcta}\n   💎 Valor: ${valor} puntos\n   💡 Retroalimentación: ${p.justificacion_pedagogica}\n------------------------\n\n`;
-    });
-    const blob = new Blob([contenido], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement('a');
-    enlace.href = url; enlace.download = `Clave_${titulo}.txt`;
-    document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
+  const clonarDesdeComunidad = async (cuestionario) => {
+    if (await historial.clonar(cuestionario)) setVista('historial');
   };
 
-  // --- LÓGICA DE EDICIÓN Y CLONADO COMUNITARIO ---
-  const actualizarPregunta = (i, c, v) => { let ex = {...examenActivo}; ex.preguntas_json[i][c] = v; setExamenActivo(ex); };
-  const actualizarOpcion = (qi, oi, v) => { let ex = {...examenActivo}; ex.preguntas_json[qi].opciones[oi] = v; setExamenActivo(ex); };
-  
-  // MODIFICADO: Agregamos el campo "puntuacion: 1" por defecto al crear una nueva pregunta manualmente
-  const agregarPreguntaVacia = () => { 
-    let ex = {...examenActivo}; 
-    ex.preguntas_json.push({
-      pregunta: "Nueva pregunta...", 
-      opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4"], 
-      respuesta_correcta: "Opción 1", 
-      justificacion_pedagogica: "...",
-      puntuacion: 1
-    }); 
-    setExamenActivo(ex); 
-  };
-  
-  const eliminarPregunta = (index) => { 
-    setModalConfirmarEliminarPregunta({ abierto: true, index: index });
-  };
+  // --- EDICIÓN (DOCENTE) ---
   const confirmarEliminarPregunta = () => {
-    let ex = {...examenActivo}; 
-    ex.preguntas_json.splice(modalConfirmarEliminarPregunta.index, 1); 
-    setExamenActivo(ex);
+    editor.eliminarPregunta(modalConfirmarEliminarPregunta.index);
     setModalConfirmarEliminarPregunta({ abierto: false, index: null });
-  }
-
-  const guardarEdicionEnBackend = async () => {
-    try {
-      await api.actualizarPreguntas(examenActivo.id, examenActivo.preguntas_json);
-      setModalInfo({ abierto: true, titulo: '¡Cambios Guardados!', mensaje: 'El examen se ha actualizado correctamente.', tipo: 'exito' });
-      setModoEdicion(false); 
-      cargarHistorial(); 
-    } catch (error) { 
-      setModalInfo({ abierto: true, titulo: 'Error al Guardar', mensaje: error.message, tipo: 'error' });
-    }
   };
 
-  const compartirEnComunidad = async (id) => {
-    try {
-      await api.compartirCuestionario(id);
-      setModalInfo({
-        abierto: true,
-        titulo: '¡Examen Compartido!',
-        mensaje: 'Tu evaluación ahora está disponible en el Mercado Comunitario. ¡Gracias por aportar a otros docentes!',
-        tipo: 'exito'
-      });
-      cargarHistorial();
-    } catch (err) {
-      setModalInfo({ abierto: true, titulo: 'No se pudo compartir en la comunidad', mensaje: err.message, tipo: 'error' });
-    }
-  };
-
-  const clonarCuestionarioDelDashboard = async (cuestionarioSeleccionado) => {
-    if (!usuario) return;
-    setCargandoHistorial(true);
-
-    try {
-      await api.clonarCuestionario(cuestionarioSeleccionado.id, usuario.id);
-      setModalInfo({
-        abierto: true,
-        titulo: '¡Examen Guardado!',
-        mensaje: `Se ha creado una copia en tu historial personal con el sufijo (Copia). Ya puedes modificarlo libremente.`,
-        tipo: 'exito'
-      });
-      setVista('historial');
-      cargarHistorial();
-    } catch (err) {
-      setModalInfo({ abierto: true, titulo: 'Error al clonar', mensaje: err.message, tipo: 'error' });
-    } finally {
-      setCargandoHistorial(false);
-    }
-  };
-
-  // --- LÓGICA DE VISTA PREVIA (DOCENTE) ---
-  const iniciarExamen = (registro) => {
-    setExamenActivo(registro); 
-    setRespuestasUsuario({}); 
-    setExamenTerminado(false); 
-    setModoEdicion(false);
-    setVista('examen'); 
-  };
-
-  // --- LÓGICA DEL ESTUDIANTE ---
-  const intentarIniciarExamen = (registro) => {
-    setModalConfirmarInicio({ abierto: true, registro: registro });
+  // --- ABRIR Y CERRAR UN EXAMEN ---
+  const abrirExamen = (registro) => {
+    editor.abrir(registro);
+    intento.reiniciar();
+    setVista('examen');
   };
 
   const confirmarInicioExamen = () => {
-    const registro = modalConfirmarInicio.registro;
-    setExamenActivo(registro); 
-    setRespuestasUsuario({}); 
-    setExamenTerminado(false); 
-    setModoEdicion(false);
+    abrirExamen(modalConfirmarInicio.registro);
     setModalConfirmarInicio({ abierto: false, registro: null });
-    setVista('examen'); 
-  };
-
-  const intentarSalirExamen = () => {
-    if (examenTerminado) {
-      salirDelExamen();
-      return;
-    }
-    setModalAdvertenciaSalida(true);
   };
 
   const salirDelExamen = () => {
     setModalAdvertenciaSalida(false);
-    setExamenActivo(null);
-    setRespuestasUsuario({});
+    editor.cerrar();
+    intento.reiniciar();
     setVista(rol === 'docente' ? 'historial' : 'panel_estudiante');
   };
 
-  const seleccionarOpcion = (pi, op) => { if (!examenTerminado) setRespuestasUsuario({ ...respuestasUsuario, [pi]: op }); };
-  
-  // MODIFICADO: Ahora el cálculo suma la puntuación de cada reactivo en lugar de contar de 1 en 1.
-  const calcularCalificacion = () => { 
-    let obtenido = 0;
-    let total = 0;
-    examenActivo.preguntas_json.forEach((p, i) => { 
-      const valorPuntos = Number(p.puntuacion) || 1; // Si no tiene puntos asignados, vale 1
-      total += valorPuntos;
-      if (respuestasUsuario[i] === p.respuesta_correcta) {
-        obtenido += valorPuntos;
-      }
-    }); 
-    return { obtenido, total }; // Devuelve un objeto con lo que sacó vs lo que valía el examen
+  const intentarSalirExamen = () => {
+    if (intento.terminado) salirDelExamen();
+    else setModalAdvertenciaSalida(true);
   };
 
+  // --- INTENTO (ESTUDIANTE) ---
   const intentarEntregarEvaluacion = () => {
-    if (Object.keys(respuestasUsuario).length < examenActivo.preguntas_json.length) {
-      setModalInfo({ abierto: true, titulo: 'Evaluación Incompleta', mensaje: 'Por favor responde todas las preguntas antes de entregar tu examen.', tipo: 'warning' });
+    if (!todasRespondidas(examenActivo.preguntas_json, intento.respuestas)) {
+      notificar('Evaluación Incompleta', 'Por favor responde todas las preguntas antes de entregar tu examen.', 'warning');
       return;
     }
     setModalConfirmarEntrega(true);
   };
 
   const confirmarEntregaExamen = () => {
-    setExamenTerminado(true);
+    intento.entregar();
     setModalConfirmarEntrega(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const reiniciarExamen = () => {
-    setModalConfirmarReinicio(true);
-  };
   const confirmarReinicio = () => {
-    setRespuestasUsuario({});
-    setExamenTerminado(false);
+    intento.reiniciar();
     setModalConfirmarReinicio(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  const modoExamenActivo = vista === 'examen' && examenActivo && !examenTerminado && rol === 'estudiante';
+  };
 
   // ==========================================
   // RENDERIZADO DEL SHELL DE LA APLICACIÓN
@@ -526,7 +328,7 @@ function EvaluacionesIA() {
             {/* SECCIÓN DEL MERCADO COMUNITARIO (DASHBOARD DOCENTE) */}
             {vista === 'dashboard' && rol === 'docente' && (
               <VistaDashboard 
-                clonarCuestionario={clonarCuestionarioDelDashboard} 
+                clonarCuestionario={clonarDesdeComunidad}
               />
             )}
 
@@ -540,33 +342,20 @@ function EvaluacionesIA() {
 
             {/* VISTAS MODULARES */}
             {vista === 'nuevo' && rol === 'docente' && (
-              <VistaCrearExamen 
-                nombreExamen={nombreExamen}         
-                setNombreExamen={setNombreExamen}
-                materia={materia}                   
-                setMateria={setMateria}             
-                numPreguntas={numPreguntas}
-                setNumPreguntas={setNumPreguntas}
-                archivo={archivo}
-                setArchivo={setArchivo}
-                generarCuestionario={generarCuestionario}
-                cargando={cargando}
-                error={error}
-                creditos={creditos}
-              />
+              <VistaCrearExamen {...generador} creditos={creditos} />
             )}
 
             {vista === 'historial' && rol === 'docente' && (
-              <VistaHistorialDocente 
-                listaHistorial={listaHistorial}
-                cargandoHistorial={cargandoHistorial}
+              <VistaHistorialDocente
+                listaHistorial={historial.lista}
+                cargandoHistorial={historial.cargando}
                 setVista={setVista}
-                iniciarExamen={iniciarExamen}
+                iniciarExamen={abrirExamen}
                 exportarExamen={exportarExamen}
-                despublicarCuestionario={despublicarCuestionario}
-                abrirModalPublicar={abrirModalPublicar}
-                eliminarExamen={eliminarExamen}
-                compartirEnComunidad={compartirEnComunidad} 
+                despublicarCuestionario={historial.despublicar}
+                abrirModalPublicar={(id) => setModalPublicar({ abierto: true, id })}
+                eliminarExamen={(id) => setModalConfirmarEliminar({ abierto: true, id })}
+                compartirEnComunidad={historial.compartir}
               />
             )}
 
@@ -580,33 +369,32 @@ function EvaluacionesIA() {
 
             {vista === 'panel_estudiante' && rol === 'estudiante' && (
               <VistaPanelEstudiante 
-                listaHistorial={listaHistorial}
-                cargandoHistorial={cargandoHistorial}
-                intentarIniciarExamen={intentarIniciarExamen}
+                listaHistorial={historial.lista}
+                cargandoHistorial={historial.cargando}
+                intentarIniciarExamen={(registro) => setModalConfirmarInicio({ abierto: true, registro })}
               />
             )}
 
             {vista === 'examen' && examenActivo && (
-              <VistaExamen 
+              <VistaExamen
                 rol={rol}
                 examenActivo={examenActivo}
-                modoEdicion={modoEdicion}
-                setModoEdicion={setModoEdicion}
+                modoEdicion={editor.modoEdicion}
+                setModoEdicion={editor.setModoEdicion}
                 setModalAlertaEdicion={setModalAlertaEdicion}
-                examenTerminado={examenTerminado}
-                calcularCalificacion={calcularCalificacion}
-                respuestasUsuario={respuestasUsuario}
-                eliminarPregunta={eliminarPregunta}
-                actualizarPregunta={actualizarPregunta}
-                actualizarOpcion={actualizarOpcion}
-                seleccionarOpcion={seleccionarOpcion}
-                agregarPreguntaVacia={agregarPreguntaVacia}
-                guardarEdicionEnBackend={guardarEdicionEnBackend}
-                setVista={setVista}
+                examenTerminado={intento.terminado}
+                calcularCalificacion={() => calcularCalificacion(examenActivo.preguntas_json, intento.respuestas)}
+                respuestasUsuario={intento.respuestas}
+                eliminarPregunta={(index) => setModalConfirmarEliminarPregunta({ abierto: true, index })}
+                actualizarPregunta={editor.actualizarPregunta}
+                actualizarOpcion={editor.actualizarOpcion}
+                seleccionarOpcion={intento.seleccionar}
+                agregarPreguntaVacia={editor.agregarPregunta}
+                guardarEdicionEnBackend={editor.guardar}
                 intentarEntregarEvaluacion={intentarEntregarEvaluacion}
                 salirDelExamen={salirDelExamen}
                 modoExamenActivo={modoExamenActivo}
-                reiniciarExamen={reiniciarExamen}
+                reiniciarExamen={() => setModalConfirmarReinicio(true)}
               />
             )}
 
