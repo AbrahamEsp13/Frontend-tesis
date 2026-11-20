@@ -1,6 +1,7 @@
 import * as api from '../api/cuestionarios';
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useSesion } from '../context/sesion';
 
 // --- COMPONENTES MODULARES (LAYOUT) ---
 import Navbar from '../components/layout/Navbar';
@@ -21,11 +22,11 @@ import Dialogo from '../components/ui/Dialogo';
 function EvaluacionesIA() {
   const navigate = useNavigate();
 
-  // --- ESTADOS DE SESIÓN Y VISTAS ---
-  const [usuario, setUsuario] = useState(null);
-  const [rol, setRol] = useState(null);
-  const [creditos, setCreditos] = useState(0);
-  const [vista, setVista] = useState('inicio'); 
+  // --- SESIÓN (compartida por toda la app) ---
+  const { usuario, rol, creditos, cerrarSesion: terminarSesion, actualizarUsuario, refrescarCreditos } = useSesion();
+
+  // --- ESTADOS DE VISTAS ---
+  const [vista, setVista] = useState(rol === 'docente' ? 'dashboard' : 'panel_estudiante');
   const [listaHistorial, setListaHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   
@@ -60,48 +61,39 @@ function EvaluacionesIA() {
   const [examenTerminado, setExamenTerminado] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // --- EFECTOS INICIALES ---
+  // --- EFECTOS ---
+  // Los créditos se regeneran cada día en el backend: el docente consulta su saldo
+  // real al entrar (dashboard) y al abrir el generador, en lugar de confiar en el valor guardado.
+  // (No en todas las vistas: VistaPerfil recarga su formulario cuando cambia el usuario.)
   useEffect(() => {
-    const usuarioGuardado = localStorage.getItem("usuarioQuizAI");
-    if (usuarioGuardado) {
-      // 1. Extraemos los datos y los metemos en una variable limpia
-      const datosUsuario = JSON.parse(usuarioGuardado);
-      
-      // 2. Repartimos la información en todos los estados de React
-      setUsuario(datosUsuario);
-      setRol(datosUsuario.rol);
-      setCreditos(datosUsuario.creditos_disponibles || 0);
-      setVista(datosUsuario.rol === 'docente' ? 'dashboard' : 'panel_estudiante');
-    }
-  }, []);
+    if (rol === 'docente' && (vista === 'dashboard' || vista === 'nuevo')) refrescarCreditos();
+  }, [rol, vista, refrescarCreditos]);
 
-  useEffect(() => {
-    if (vista === 'historial' || vista === 'panel_estudiante') {
-      cargarHistorial();
-    }
-  }, [vista]);
+  const usuarioId = usuario?.id;
 
-  const cerrarSesion = () => {
-    localStorage.removeItem("usuarioQuizAI"); 
-    navigate('/'); 
-    setRol(null); 
-    setUsuario(null);
-    setExamenActivo(null); 
-    setMenuUsuarioAbierto(false);
-  };
-
-  const cargarHistorial = async () => {
+  const cargarHistorial = useCallback(async () => {
+    if (!usuarioId) return;
     setCargandoHistorial(true);
     try {
-      const usuarioString = localStorage.getItem("usuarioQuizAI");
-      if (!usuarioString) return;
-      const usuario = JSON.parse(usuarioString);
-      setListaHistorial(await api.listarCuestionarios(usuario.id, usuario.rol));
+      setListaHistorial(await api.listarCuestionarios(usuarioId, rol));
     } catch {
       setListaHistorial([]);
     } finally {
       setCargandoHistorial(false);
     }
+  }, [usuarioId, rol]);
+
+  useEffect(() => {
+    if (vista === 'historial' || vista === 'panel_estudiante') {
+      cargarHistorial();
+    }
+  }, [vista, cargarHistorial]);
+
+  const cerrarSesion = () => {
+    navigate('/');
+    terminarSesion();
+    setExamenActivo(null);
+    setMenuUsuarioAbierto(false);
   };
 
   // --- LÓGICA DEL DOCENTE ---
@@ -119,19 +111,15 @@ function EvaluacionesIA() {
       return;
     }
     setCargando(true); setError(null);
-    const usuario = JSON.parse(localStorage.getItem("usuarioQuizAI"));
 
     try {
       // Si el backend responde con error (p. ej. créditos agotados), api lanza su 'detail'
-      await api.generarCuestionario({ archivo, usuarioId: usuario.id, numPreguntas, nombreExamen, materia });
+      const resultado = await api.generarCuestionario({ archivo, usuarioId: usuario.id, numPreguntas, nombreExamen, materia });
 
       setModalInfo({ abierto: true, titulo: '¡Cuestionario Generado!', mensaje: 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', tipo: 'exito' });
-      
-      // ACTUALIZAMOS LOS CRÉDITOS EN MEMORIA
-      const nuevosCreditos = creditos - 1;
-      setCreditos(nuevosCreditos);
-      usuario.creditos_disponibles = nuevosCreditos;
-      localStorage.setItem("usuarioQuizAI", JSON.stringify(usuario));
+
+      // El backend devuelve el saldo restante; si no viene, descontamos uno localmente
+      actualizarUsuario({ creditos_disponibles: resultado?.creditos_disponibles ?? creditos - 1 });
 
       setNombreExamen(''); 
       setMateria('');
@@ -139,9 +127,11 @@ function EvaluacionesIA() {
       setVista('historial'); 
       cargarHistorial(); 
       
-    } catch (err) { 
+    } catch (err) {
+      // 403 = créditos agotados: sincronizamos el saldo para que el formulario se bloquee
+      if (err.status === 403) refrescarCreditos();
       // MOSTRAMOS EL MENSAJE DINÁMICO EN EL MODAL
-      setModalInfo({ 
+      setModalInfo({
         abierto: true, 
         titulo: err.message.includes('créditos') ? 'Créditos Agotados' : 'Error en la Generación', 
         mensaje: err.message, 
@@ -259,9 +249,7 @@ function EvaluacionesIA() {
   };
 
   const clonarCuestionarioDelDashboard = async (cuestionarioSeleccionado) => {
-    const usuarioString = localStorage.getItem("usuarioQuizAI");
-    if (!usuarioString) return;
-    const usuario = JSON.parse(usuarioString);
+    if (!usuario) return;
     setCargandoHistorial(true);
 
     try {
@@ -366,17 +354,9 @@ function EvaluacionesIA() {
   // RENDERIZADO DEL SHELL DE LA APLICACIÓN
   // ==========================================
 
-  if (!rol) {
-    return (
-      <div className="max-w-xl mx-auto mt-24 text-center font-sans">
-        <h1 className="text-4xl font-extrabold text-blue-700 mb-4">🧠 QuizAI</h1>
-        <p className="text-gray-500 mb-10">Selecciona tu perfil para ingresar a la plataforma</p>
-        <div className="flex gap-6 justify-center">
-          <button onClick={() => { setRol('docente'); setVista('dashboard'); }} className="p-8 text-xl w-52 cursor-pointer bg-gray-800 text-white border-none rounded-2xl shadow-lg hover:bg-gray-700 transition-colors">👨‍🏫 Soy Docente</button>
-          <button onClick={() => { setRol('estudiante'); setVista('panel_estudiante'); }} className="p-8 text-xl w-52 cursor-pointer bg-blue-600 text-white border-none rounded-2xl shadow-lg hover:bg-blue-700 transition-colors">🎓 Soy Estudiante</button>
-        </div>
-      </div>
-    );
+  // Sin sesión no hay nada que mostrar: de vuelta a la página de inicio para iniciar sesión
+  if (!usuario) {
+    return <Navigate to="/" replace />;
   }
 
   return (
@@ -591,7 +571,7 @@ function EvaluacionesIA() {
             )}
 
             {vista === 'perfil' && (
-                <VistaPerfil usuario={usuario} setUsuario={setUsuario} />
+                <VistaPerfil />
             )}
 
             {vista === 'configuracion' && (

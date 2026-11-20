@@ -1,7 +1,9 @@
 import { actualizarPerfil } from '../../api/usuarios';
 import React, { useState, useEffect } from 'react';
+import { useSesion } from '../../context/sesion';
 
-function VistaPerfil({ usuario, setUsuario }) {
+function VistaPerfil() {
+  const { usuario, actualizarUsuario } = useSesion();
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
@@ -70,9 +72,8 @@ function VistaPerfil({ usuario, setUsuario }) {
     try {
       const data = await actualizarPerfil(usuario.id, formData);
 
-      setUsuario(data.usuario);
-      localStorage.setItem("usuarioQuizAI", JSON.stringify(data.usuario));
-      
+      actualizarUsuario(data.usuario);
+
       setMensaje({ texto: '¡Perfil actualizado con éxito!', tipo: 'exito' });
       setModoEdicion(false);
       setMostrarAvatares(false);

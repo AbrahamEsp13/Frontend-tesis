@@ -2,10 +2,12 @@ import { iniciarSesion, registrarUsuario } from '../api/auth';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useSesion } from '../context/sesion';
 
 const AuthModal = ({ isOpen, onClose, initialMode }) => {
     const [isLogin, setIsLogin] = useState(initialMode === 'login');
     const navigate = useNavigate();
+    const { iniciarSesion: guardarSesion } = useSesion();
 
     // --- NUEVOS ESTADOS PARA CAPTURAR LOS DATOS DEL FORMULARIO ---
     const [nombre, setNombre] = useState('');
@@ -29,8 +31,8 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
                 // --- LÓGICA DE INICIAR SESIÓN ---
                 const data = await iniciarSesion(correo, password);
 
-                // Quitamos el alert y guardamos en memoria
-                localStorage.setItem("usuarioQuizAI", JSON.stringify(data.usuario));
+                // Guardamos la sesión (el contexto la persiste en localStorage)
+                guardarSesion(data.usuario);
                 
                 onClose(); 
                 navigate('/evaluaciones-ia');
