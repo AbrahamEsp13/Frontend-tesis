@@ -1,39 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import React, { useState, useCallback, useRef } from 'react';
+import { useNavigate, useLocation, useBlocker, Navigate, Outlet } from 'react-router-dom';
 import { useSesion } from '../context/sesion';
+import { RUTAS, rutaExamen, vistaDesdeRuta } from '../rutas';
 
 // --- LÓGICA (hooks y utilidades) ---
 import { useHistorial } from '../hooks/useHistorial';
 import { useEditorExamen } from '../hooks/useEditorExamen';
 import { useIntentoExamen } from '../hooks/useIntentoExamen';
 import { useGenerador } from '../hooks/useGenerador';
-import { calcularCalificacion, todasRespondidas } from '../utils/calificar';
-import { exportarExamen } from '../utils/exportarExamen';
+import { todasRespondidas } from '../utils/calificar';
 
-// --- COMPONENTES MODULARES (LAYOUT) ---
+// --- COMPONENTES ---
 import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
-
-// --- COMPONENTES MODULARES (VISTAS) ---
-import VistaCrearExamen from '../components/dashboard/VistaCrearExamen'; 
-import VistaHistorialDocente from '../components/dashboard/VistaHistorialDocente'; 
-import VistaPanelEstudiante from '../components/dashboard/VistaPanelEstudiante';
-import VistaExamen from '../components/dashboard/VistaExamen';
-import VistaDashboard from '../components/dashboard/VistaDashboard';
-import VistaPerfil from '../components/dashboard/VistaPerfil';
-import VistaConfiguracion from '../components/dashboard/VistaConfiguracion';
-
-// --- COMPONENTES DE UI ---
 import Dialogo from '../components/ui/Dialogo';
 
-function EvaluacionesIA() {
+/**
+ * Estructura de la sección privada (/app): Navbar + Sidebar + modales + <Outlet>.
+ * Mantiene el estado compartido entre rutas (historial, examen abierto, borrador del generador)
+ * y lo pasa a cada ruta con el contexto del Outlet (ver pages/app/rutas.jsx).
+ */
+function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // --- SESIÓN (compartida por toda la app) ---
-  const { usuario, rol, creditos, cerrarSesion: terminarSesion, refrescarCreditos } = useSesion();
+  const { usuario, rol, creditos, cerrarSesion: terminarSesion } = useSesion();
 
-  // --- NAVEGACIÓN Y UI GENERAL ---
-  const [vista, setVista] = useState(rol === 'docente' ? 'dashboard' : 'panel_estudiante');
+  // --- NAVEGACIÓN ---
+  // Navbar, Sidebar y VistaHistorialDocente trabajan con nombres de vista; aquí se traducen a URLs.
+  const vista = vistaDesdeRuta(location.pathname);
+  const setVista = useCallback((nombre) => navigate(RUTAS[nombre]), [navigate]);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
 
   // --- MODALES ---
@@ -56,26 +53,19 @@ function EvaluacionesIA() {
   const historial = useHistorial({ usuarioId: usuario?.id, rol, notificar });
   const editor = useEditorExamen({ notificar, onGuardado: historial.cargar });
   const intento = useIntentoExamen();
-  const generador = useGenerador({
-    notificar,
-    onGenerado: () => { setVista('historial'); historial.cargar(); },
-  });
+  const generador = useGenerador({ notificar, onGenerado: () => navigate(RUTAS.historial) });
 
   const examenActivo = editor.examen;
-  const modoExamenActivo = vista === 'examen' && examenActivo && !intento.terminado && rol === 'estudiante';
+  const modoExamenActivo = vista === 'examen' && !!examenActivo && !intento.terminado && rol === 'estudiante';
 
-  // --- EFECTOS ---
-  // Los créditos se regeneran cada día en el backend: el docente consulta su saldo
-  // real al entrar (dashboard) y al abrir el generador, en lugar de confiar en el valor guardado.
-  // (No en todas las vistas: VistaPerfil recarga su formulario cuando cambia el usuario.)
-  useEffect(() => {
-    if (rol === 'docente' && (vista === 'dashboard' || vista === 'nuevo')) refrescarCreditos();
-  }, [rol, vista, refrescarCreditos]);
-
-  const cargarHistorial = historial.cargar;
-  useEffect(() => {
-    if (vista === 'historial' || vista === 'panel_estudiante') cargarHistorial();
-  }, [vista, cargarHistorial]);
+  // --- PROTECCIÓN DEL EXAMEN ---
+  // Si el estudiante intenta salir a mitad del examen (botón Atrás, enlaces, etc.)
+  // la navegación se detiene y aparece el modal "¡Alto ahí!".
+  const saliendoDelExamen = useRef(false);
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) =>
+    modoExamenActivo && !saliendoDelExamen.current && currentLocation.pathname !== nextLocation.pathname
+  );
+  const salidaBloqueada = bloqueo.state === 'blocked';
 
   const cerrarSesion = () => {
     navigate('/');
@@ -98,7 +88,7 @@ function EvaluacionesIA() {
   };
 
   const clonarDesdeComunidad = async (cuestionario) => {
-    if (await historial.clonar(cuestionario)) setVista('historial');
+    if (await historial.clonar(cuestionario)) navigate(RUTAS.historial);
   };
 
   // --- EDICIÓN (DOCENTE) ---
@@ -109,9 +99,10 @@ function EvaluacionesIA() {
 
   // --- ABRIR Y CERRAR UN EXAMEN ---
   const abrirExamen = (registro) => {
+    saliendoDelExamen.current = false;
     editor.abrir(registro);
     intento.reiniciar();
-    setVista('examen');
+    navigate(rutaExamen(registro.id));
   };
 
   const confirmarInicioExamen = () => {
@@ -119,16 +110,32 @@ function EvaluacionesIA() {
     setModalConfirmarInicio({ abierto: false, registro: null });
   };
 
+  // El examen se queda en memoria al salir: la ruta ya no lo muestra y se reemplaza al abrir otro.
   const salirDelExamen = () => {
+    saliendoDelExamen.current = true; // esta salida es intencional: no la bloquees
     setModalAdvertenciaSalida(false);
-    editor.cerrar();
-    intento.reiniciar();
-    setVista(rol === 'docente' ? 'historial' : 'panel_estudiante');
+    navigate(rol === 'docente' ? RUTAS.historial : RUTAS.panel_estudiante);
   };
 
   const intentarSalirExamen = () => {
     if (intento.terminado) salirDelExamen();
     else setModalAdvertenciaSalida(true);
+  };
+
+  const confirmarSalida = () => {
+    if (salidaBloqueada) {
+      // Iba a otra parte (p. ej. botón Atrás): lo dejamos continuar
+      saliendoDelExamen.current = true;
+      setModalAdvertenciaSalida(false);
+      bloqueo.proceed();
+    } else {
+      salirDelExamen();
+    }
+  };
+
+  const cancelarSalida = () => {
+    setModalAdvertenciaSalida(false);
+    if (salidaBloqueada) bloqueo.reset();
   };
 
   // --- INTENTO (ESTUDIANTE) ---
@@ -153,7 +160,7 @@ function EvaluacionesIA() {
   };
 
   // ==========================================
-  // RENDERIZADO DEL SHELL DE LA APLICACIÓN
+  // RENDERIZADO
   // ==========================================
 
   // Sin sesión no hay nada que mostrar: de vuelta a la página de inicio para iniciar sesión
@@ -161,9 +168,17 @@ function EvaluacionesIA() {
     return <Navigate to="/" replace />;
   }
 
+  // Lo que cada ruta necesita del layout (se lee con useOutletContext)
+  const contextoRutas = {
+    setVista, historial, editor, intento, generador, modoExamenActivo,
+    abrirExamen, salirDelExamen, clonarDesdeComunidad, intentarEntregarEvaluacion,
+    setModalPublicar, setModalConfirmarEliminar, setModalConfirmarEliminarPregunta,
+    setModalAlertaEdicion, setModalConfirmarInicio, setModalConfirmarReinicio,
+  };
+
   return (
     <div className={`min-h-screen ${modoExamenActivo ? 'bg-white dark:bg-gray-900' : 'bg-[#f8f9fa] dark:bg-gray-900'} flex flex-col font-sans text-gray-800 dark:text-gray-100 relative transition-colors duration-300`}>
-      
+
       {/* ========================================== */}
       {/* ZONA DE MODALES (DOCENTE Y GENERAL)        */}
       {/* ========================================== */}
@@ -253,7 +268,7 @@ function EvaluacionesIA() {
       </Dialogo>
 
       <Dialogo
-        abierto={modalAdvertenciaSalida}
+        abierto={modalAdvertenciaSalida || salidaBloqueada}
         icono="warning"
         color="red"
         variante="alerta"
@@ -261,9 +276,9 @@ function EvaluacionesIA() {
         overlayFuerte
         titulo="¡Alto ahí!"
         textoCancelar="No, Volver al Examen"
-        onCancelar={() => setModalAdvertenciaSalida(false)}
+        onCancelar={cancelarSalida}
         textoConfirmar="Sí, Salir y Perder Progreso"
-        onConfirmar={salirDelExamen}
+        onConfirmar={confirmarSalida}
       >
         Si sales ahora, <strong className="text-red-700">tus respuestas no se guardarán</strong> y perderás tu progreso en este intento de evaluación. ¿Estás seguro de que quieres abandonar?
       </Dialogo>
@@ -295,9 +310,9 @@ function EvaluacionesIA() {
       </Dialogo>
 
       {/* ========================================== */}
-      {/* NAVBAR SUPERIOR MODULAR                  */}
+      {/* NAVBAR SUPERIOR                            */}
       {/* ========================================== */}
-      <Navbar 
+      <Navbar
         rol={rol}
         usuario={usuario}
         setVista={setVista}
@@ -310,11 +325,11 @@ function EvaluacionesIA() {
 
       {/* --- CONTENEDOR PRINCIPAL --- */}
       <div className={`flex flex-1 overflow-hidden mt-16 ${modoExamenActivo ? 'justify-center' : ''}`}>
-        
+
         {/* ========================================== */}
-        {/* SIDEBAR LATERAL IZQUIERDO MODULAR        */}
+        {/* SIDEBAR LATERAL IZQUIERDO                  */}
         {/* ========================================== */}
-        <Sidebar 
+        <Sidebar
           rol={rol}
           vista={vista}
           setVista={setVista}
@@ -324,81 +339,8 @@ function EvaluacionesIA() {
 
         <main className={`${modoExamenActivo ? 'ml-0 max-w-4xl' : 'ml-0 md:ml-64'} flex-1 overflow-y-auto p-8 bg-[#f8f9fa] dark:bg-gray-900 min-h-[calc(100vh-64px)] transition-all duration-300`}>
           <div className={`${modoExamenActivo ? 'w-full' : 'max-w-6xl'} mx-auto`}>
-
-            {/* SECCIÓN DEL MERCADO COMUNITARIO (DASHBOARD DOCENTE) */}
-            {vista === 'dashboard' && rol === 'docente' && (
-              <VistaDashboard 
-                clonarCuestionario={clonarDesdeComunidad}
-              />
-            )}
-
-            {vista === 'clases' && (
-              <div className="flex flex-col items-center justify-center pt-32 text-center bg-white p-16 rounded-3xl border border-gray-100 shadow-sm">
-                <span className="material-symbols-outlined text-7xl text-gray-300 mb-5 animate-pulse">construction</span>
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Sección en proceso</h2>
-                <p className="text-gray-500 max-w-md">La gestión y creación de grupos llegará en las próximas actualizaciones de QuizAI.</p>
-              </div>
-            )}
-
-            {/* VISTAS MODULARES */}
-            {vista === 'nuevo' && rol === 'docente' && (
-              <VistaCrearExamen {...generador} creditos={creditos} />
-            )}
-
-            {vista === 'historial' && rol === 'docente' && (
-              <VistaHistorialDocente
-                listaHistorial={historial.lista}
-                cargandoHistorial={historial.cargando}
-                setVista={setVista}
-                iniciarExamen={abrirExamen}
-                exportarExamen={exportarExamen}
-                despublicarCuestionario={historial.despublicar}
-                abrirModalPublicar={(id) => setModalPublicar({ abierto: true, id })}
-                eliminarExamen={(id) => setModalConfirmarEliminar({ abierto: true, id })}
-                compartirEnComunidad={historial.compartir}
-              />
-            )}
-
-            {vista === 'perfil' && (
-                <VistaPerfil />
-            )}
-
-            {vista === 'configuracion' && (
-                <VistaConfiguracion usuario={usuario} />
-            )}
-
-            {vista === 'panel_estudiante' && rol === 'estudiante' && (
-              <VistaPanelEstudiante 
-                listaHistorial={historial.lista}
-                cargandoHistorial={historial.cargando}
-                intentarIniciarExamen={(registro) => setModalConfirmarInicio({ abierto: true, registro })}
-              />
-            )}
-
-            {vista === 'examen' && examenActivo && (
-              <VistaExamen
-                rol={rol}
-                examenActivo={examenActivo}
-                modoEdicion={editor.modoEdicion}
-                setModoEdicion={editor.setModoEdicion}
-                setModalAlertaEdicion={setModalAlertaEdicion}
-                examenTerminado={intento.terminado}
-                calcularCalificacion={() => calcularCalificacion(examenActivo.preguntas_json, intento.respuestas)}
-                respuestasUsuario={intento.respuestas}
-                eliminarPregunta={(index) => setModalConfirmarEliminarPregunta({ abierto: true, index })}
-                actualizarPregunta={editor.actualizarPregunta}
-                actualizarOpcion={editor.actualizarOpcion}
-                seleccionarOpcion={intento.seleccionar}
-                agregarPreguntaVacia={editor.agregarPregunta}
-                guardarEdicionEnBackend={editor.guardar}
-                intentarEntregarEvaluacion={intentarEntregarEvaluacion}
-                salirDelExamen={salirDelExamen}
-                modoExamenActivo={modoExamenActivo}
-                reiniciarExamen={() => setModalConfirmarReinicio(true)}
-              />
-            )}
-
-
+            {/* La vista de la ruta actual (ver pages/app/rutas.jsx) */}
+            <Outlet context={contextoRutas} />
           </div>
         </main>
       </div>
@@ -406,4 +348,4 @@ function EvaluacionesIA() {
   );
 }
 
-export default EvaluacionesIA;
+export default AppLayout;

@@ -35,7 +35,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
                 guardarSesion(data.usuario);
                 
                 onClose(); 
-                navigate('/evaluaciones-ia');
+                navigate('/app');
 
             } else {
                 // --- LÓGICA DE REGISTRO ---
