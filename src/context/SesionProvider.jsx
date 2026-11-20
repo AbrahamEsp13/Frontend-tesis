@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SesionContext } from './sesion';
 import { obtenerCreditos } from '../api/usuarios';
+import { obtenerToken, guardarToken } from '../api/token';
+import { alExpirarSesion } from '../api/cliente';
 
 const CLAVE = 'usuarioQuizAI';
 
 // localStorage puede fallar (modo privado, almacenamiento bloqueado): la app debe seguir funcionando.
 function leerUsuarioGuardado() {
+  // Una sesión sin token (p. ej. guardada antes de que existiera el JWT) no sirve: hay que volver a entrar.
+  if (!obtenerToken()) return null;
   try {
     const texto = localStorage.getItem(CLAVE);
     return texto ? JSON.parse(texto) : null;
@@ -32,8 +36,24 @@ export function SesionProvider({ children }) {
     guardarUsuario(usuario);
   }, [usuario]);
 
-  const iniciarSesion = useCallback((datosUsuario) => setUsuario(datosUsuario), []);
-  const cerrarSesion = useCallback(() => setUsuario(null), []);
+  // El token se guarda de forma síncrona (antes de renderizar) para que las primeras
+  // peticiones de la app ya lo lleven.
+  const iniciarSesion = useCallback((datosUsuario, token) => {
+    guardarToken(token);
+    setUsuario(datosUsuario);
+  }, []);
+
+  const cerrarSesion = useCallback(() => {
+    guardarToken(null);
+    setUsuario(null);
+  }, []);
+
+  // Si el backend rechaza el token (vencido o inválido), se cierra la sesión
+  // y AppLayout redirige a la página de inicio.
+  useEffect(() => {
+    alExpirarSesion(cerrarSesion);
+    return () => alExpirarSesion(null);
+  }, [cerrarSesion]);
 
   /** Mezcla cambios en el usuario actual (p. ej. perfil editado o créditos nuevos). */
   const actualizarUsuario = useCallback((cambios) => {

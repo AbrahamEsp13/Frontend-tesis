@@ -1,9 +1,10 @@
 import { request } from './cliente';
 
+// El backend identifica al usuario por el token: ninguna función envía usuario_id.
+
 /** Docente: sus exámenes. Estudiante: los publicados. Devuelve un arreglo. */
-export const listarCuestionarios = async (usuarioId, rol) => {
-  const params = new URLSearchParams({ usuario_id: usuarioId, rol });
-  const resultado = await request(`/api/cuestionarios?${params}`);
+export const listarCuestionarios = async () => {
+  const resultado = await request('/api/cuestionarios');
   return resultado?.data || [];
 };
 
@@ -12,12 +13,11 @@ export const listarComunidad = async () => {
   return resultado?.data || [];
 };
 
-export const generarCuestionario = ({ archivo, usuarioId, numPreguntas, nombreExamen, materia }) => {
+export const generarCuestionario = ({ archivo, numPreguntas, nombreExamen, materia }) => {
   const formData = new FormData();
   formData.append('nombre_examen', nombreExamen);
   formData.append('materia', materia);
   formData.append('archivo', archivo);
-  formData.append('usuario_id', usuarioId);
   formData.append('num_preguntas', numPreguntas);
   return request('/api/generar-cuestionario', { method: 'POST', body: formData });
 };
@@ -37,5 +37,6 @@ export const compartirCuestionario = (id) =>
 export const eliminarCuestionario = (id) =>
   request(`/api/cuestionarios/${id}`, { method: 'DELETE' });
 
-export const clonarCuestionario = (id, usuarioId) =>
-  request(`/api/cuestionarios/${id}/clonar`, { method: 'POST', body: { usuario_id: usuarioId } });
+/** La copia queda a nombre del docente del token. */
+export const clonarCuestionario = (id) =>
+  request(`/api/cuestionarios/${id}/clonar`, { method: 'POST' });

@@ -31,8 +31,8 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
                 // --- LÓGICA DE INICIAR SESIÓN ---
                 const data = await iniciarSesion(correo, password);
 
-                // Guardamos la sesión (el contexto la persiste en localStorage)
-                guardarSesion(data.usuario);
+                // Guardamos la sesión con su token JWT (el contexto la persiste en localStorage)
+                guardarSesion(data.usuario, data.token);
                 
                 onClose(); 
                 navigate('/app');

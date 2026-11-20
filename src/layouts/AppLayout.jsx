@@ -50,7 +50,7 @@ function AppLayout() {
   }, []);
 
   // --- LÓGICA (hooks) ---
-  const historial = useHistorial({ usuarioId: usuario?.id, rol, notificar });
+  const historial = useHistorial({ usuarioId: usuario?.id, notificar });
   const editor = useEditorExamen({ notificar, onGuardado: historial.cargar });
   const intento = useIntentoExamen();
   const generador = useGenerador({ notificar, onGenerado: () => navigate(RUTAS.historial) });

@@ -7,7 +7,7 @@ import { useSesion } from '../context/sesion';
  * Devuelve las mismas props que espera <VistaCrearExamen> (excepto `creditos`).
  */
 export function useGenerador({ notificar, onGenerado }) {
-  const { usuario, creditos, actualizarUsuario, refrescarCreditos } = useSesion();
+  const { creditos, actualizarUsuario, refrescarCreditos } = useSesion();
 
   const [nombreExamen, setNombreExamen] = useState('');
   const [materia, setMateria] = useState('');
@@ -32,7 +32,7 @@ export function useGenerador({ notificar, onGenerado }) {
     setCargando(true);
     try {
       // Si el backend responde con error (p. ej. créditos agotados), api lanza su 'detail'
-      const resultado = await api.generarCuestionario({ archivo, usuarioId: usuario.id, numPreguntas, nombreExamen, materia });
+      const resultado = await api.generarCuestionario({ archivo, numPreguntas, nombreExamen, materia });
 
       notificar('¡Cuestionario Generado!', 'La IA ha procesado el PDF. Ve a tu historial para revisarlo y publicarlo.', 'exito');
 

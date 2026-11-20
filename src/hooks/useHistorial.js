@@ -3,10 +3,10 @@ import * as api from '../api/cuestionarios';
 
 /**
  * Lista de cuestionarios del usuario y las acciones sobre ellos.
- * Docente: sus exámenes. Estudiante: los publicados.
+ * Docente: sus exámenes. Estudiante: los publicados (el backend lo decide por el token).
  * Cada acción recarga la lista, avisa con `notificar` y devuelve true si salió bien.
  */
-export function useHistorial({ usuarioId, rol, notificar }) {
+export function useHistorial({ usuarioId, notificar }) {
   const [lista, setLista] = useState([]);
   const [cargando, setCargando] = useState(false);
 
@@ -14,13 +14,13 @@ export function useHistorial({ usuarioId, rol, notificar }) {
     if (!usuarioId) return;
     setCargando(true);
     try {
-      setLista(await api.listarCuestionarios(usuarioId, rol));
+      setLista(await api.listarCuestionarios());
     } catch {
       setLista([]);
     } finally {
       setCargando(false);
     }
-  }, [usuarioId, rol]);
+  }, [usuarioId]); // se recarga si cambia el usuario en sesión
 
   const ejecutar = async (accion, { exito, tituloError }) => {
     try {
@@ -52,7 +52,7 @@ export function useHistorial({ usuarioId, rol, notificar }) {
     tituloError: 'No se pudo compartir en la comunidad',
   });
 
-  const clonar = (cuestionario) => ejecutar(() => api.clonarCuestionario(cuestionario.id, usuarioId), {
+  const clonar = (cuestionario) => ejecutar(() => api.clonarCuestionario(cuestionario.id), {
     exito: { titulo: '¡Examen Guardado!', mensaje: 'Se ha creado una copia en tu historial personal con el sufijo (Copia). Ya puedes modificarlo libremente.' },
     tituloError: 'Error al clonar',
   });

@@ -1,4 +1,11 @@
 import { API_URL } from '../config';
+import { obtenerToken } from './token';
+
+// Lo registra SesionProvider: cierra la sesión cuando el backend rechaza el token (vencido o inválido).
+let alExpirar = null;
+export function alExpirarSesion(manejador) {
+  alExpirar = manejador;
+}
 
 /** Error de la API con el mensaje para el usuario y el código HTTP (0 = sin conexión). */
 export class ApiError extends Error {
@@ -23,11 +30,16 @@ function mensajeDeError(datos, status) {
 /**
  * Hace una petición al backend.
  * - `body` puede ser un objeto (se envía como JSON) o un FormData (se envía tal cual).
+ * - Si hay sesión, envía el token: `Authorization: Bearer <token>`.
  * - Si la respuesta no es 2xx, lanza ApiError con el `detail` del backend.
+ *   Un 401 con token enviado significa sesión vencida: se avisa a SesionProvider para cerrarla.
  * - Devuelve el JSON de la respuesta (o null si no trae cuerpo).
  */
 export async function request(ruta, { method = 'GET', body, headers = {} } = {}) {
   const opciones = { method, headers: { ...headers } };
+
+  const token = obtenerToken();
+  if (token) opciones.headers.Authorization = `Bearer ${token}`;
 
   if (body instanceof FormData) {
     opciones.body = body;
@@ -46,6 +58,7 @@ export async function request(ruta, { method = 'GET', body, headers = {} } = {})
   const datos = await respuesta.json().catch(() => null);
 
   if (!respuesta.ok) {
+    if (respuesta.status === 401 && token) alExpirar?.();
     throw new ApiError(mensajeDeError(datos, respuesta.status), respuesta.status);
   }
   return datos;

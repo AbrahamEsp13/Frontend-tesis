@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 export const SesionContext = createContext(null);
 
 /**
- * Sesión del usuario: { usuario, rol, creditos, iniciarSesion, cerrarSesion,
+ * Sesión del usuario: { usuario, rol, creditos, iniciarSesion(usuario, token), cerrarSesion,
  * actualizarUsuario, refrescarCreditos }.
  * Debe usarse dentro de <SesionProvider>.
  */
