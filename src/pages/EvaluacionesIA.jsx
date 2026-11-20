@@ -15,6 +15,9 @@ import VistaDashboard from '../components/dashboard/VistaDashboard';
 import VistaPerfil from '../components/dashboard/VistaPerfil';
 import VistaConfiguracion from '../components/dashboard/VistaConfiguracion';
 
+// --- COMPONENTES DE UI ---
+import Dialogo from '../components/ui/Dialogo';
+
 function EvaluacionesIA() {
   const navigate = useNavigate();
 
@@ -407,181 +410,132 @@ function EvaluacionesIA() {
       {/* ========================================== */}
       {/* ZONA DE MODALES (DOCENTE Y GENERAL)        */}
       {/* ========================================== */}
-      
-      {modalInfo.abierto && (
-        <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className={`flex items-center justify-center w-16 h-16 mx-auto rounded-full mb-4 ${
-              modalInfo.tipo === 'exito' ? 'bg-green-100 text-green-600' : 
-              modalInfo.tipo === 'error' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
-            }`}>
-              <span className="material-symbols-outlined text-4xl">
-                {modalInfo.tipo === 'exito' ? 'check_circle' : modalInfo.tipo === 'error' ? 'error' : 'warning'}
-              </span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{modalInfo.titulo}</h3>
-            <p className="text-gray-500 mb-6 text-sm">{modalInfo.mensaje}</p>
-            <button onClick={() => setModalInfo({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' })} className={`w-full py-3 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none ${
-              modalInfo.tipo === 'exito' ? 'bg-green-600 hover:bg-green-700' : 
-              modalInfo.tipo === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-500 hover:bg-yellow-600'
-            }`}>
-              Entendido
-            </button>
-          </div>
-        </div>
-      )}
 
-      {modalConfirmarEliminar.abierto && (
-        <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
-              <span className="material-symbols-outlined text-red-600 text-3xl">delete_forever</span>
-            </div>
-            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Eliminar Examen?</h3>
-            <p className="text-center text-gray-500 mb-8">Esta acción borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong></p>
-            <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarEliminar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarEliminacionExamen} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalInfo.abierto}
+        icono={modalInfo.tipo === 'exito' ? 'check_circle' : modalInfo.tipo === 'error' ? 'error' : 'warning'}
+        color={modalInfo.tipo === 'exito' ? 'green' : modalInfo.tipo === 'error' ? 'red' : 'yellow'}
+        titulo={modalInfo.titulo}
+        textoConfirmar="Entendido"
+        onConfirmar={() => setModalInfo({ abierto: false, titulo: '', mensaje: '', tipo: 'exito' })}
+      >
+        {modalInfo.mensaje}
+      </Dialogo>
 
-      {modalConfirmarEliminarPregunta.abierto && (
-        <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
-              <span className="material-symbols-outlined text-red-600 text-3xl">remove_selection</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">¿Borrar Pregunta?</h3>
-            <p className="text-gray-500 mb-6 text-sm">Esta pregunta será removida del cuestionario actual.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarEliminarPregunta({ abierto: false, index: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarEliminarPregunta} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Borrar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalConfirmarEliminar.abierto}
+        icono="delete_forever"
+        color="red"
+        ancho="md"
+        titulo="¿Eliminar Examen?"
+        textoConfirmar="Sí, Eliminar"
+        onConfirmar={confirmarEliminacionExamen}
+        onCancelar={() => setModalConfirmarEliminar({ abierto: false, id: null })}
+      >
+        Esta acción borrará el examen para siempre de tu historial. <strong className="text-gray-700">No se puede deshacer.</strong>
+      </Dialogo>
 
-      {modalPublicar.abierto && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
-              <span className="material-symbols-outlined text-blue-600 text-2xl">rocket_launch</span>
-            </div>
-            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Publicar Evaluación?</h3>
-            <p className="text-center text-gray-500 mb-8">Una vez publicado, este cuestionario será visible para tus estudiantes y <strong className="text-gray-700">no podrá ser editado</strong> mientras esté en vivo.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setModalPublicar({ abierto: false, id: null })} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarPublicacion} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-md border-none outline-none">Sí, Publicar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalConfirmarEliminarPregunta.abierto}
+        icono="remove_selection"
+        color="red"
+        titulo="¿Borrar Pregunta?"
+        textoConfirmar="Borrar"
+        onConfirmar={confirmarEliminarPregunta}
+        onCancelar={() => setModalConfirmarEliminarPregunta({ abierto: false, index: null })}
+      >
+        Esta pregunta será removida del cuestionario actual.
+      </Dialogo>
 
-      {modalAlertaEdicion && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
-              <span className="material-symbols-outlined text-yellow-600 text-3xl">lock</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Examen Bloqueado</h3>
-            <p className="text-gray-500 mb-6 text-sm">No puedes editar un cuestionario que ya está publicado. Para hacer cambios, primero debes <strong className="text-gray-700">Ocultarlo</strong> desde tu Historial.</p>
-            <button onClick={() => setModalAlertaEdicion(false)} className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Entendido</button>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalPublicar.abierto}
+        icono="rocket_launch"
+        color="blue"
+        ancho="md"
+        titulo="¿Publicar Evaluación?"
+        textoConfirmar="Sí, Publicar"
+        onConfirmar={confirmarPublicacion}
+        onCancelar={() => setModalPublicar({ abierto: false, id: null })}
+      >
+        Una vez publicado, este cuestionario será visible para tus estudiantes y <strong className="text-gray-700">no podrá ser editado</strong> mientras esté en vivo.
+      </Dialogo>
+
+      <Dialogo
+        abierto={modalAlertaEdicion}
+        icono="lock"
+        color="yellow"
+        titulo="Examen Bloqueado"
+        textoConfirmar="Entendido"
+        onConfirmar={() => setModalAlertaEdicion(false)}
+      >
+        No puedes editar un cuestionario que ya está publicado. Para hacer cambios, primero debes <strong className="text-gray-700">Ocultarlo</strong> desde tu Historial.
+      </Dialogo>
 
       {/* ========================================== */}
       {/* ZONA DE MODALES (ESTUDIANTE)               */}
       {/* ========================================== */}
-      
-      {modalConfirmarInicio.abierto && modalConfirmarInicio.registro && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-10 overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 rounded-full mb-6">
-              <span className="material-symbols-outlined text-blue-600 text-3xl">play_circle</span>
-            </div>
-            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2">¿Comenzar Evaluación?</h3>
-            <p className="text-center text-gray-600 mb-3">Has seleccionado el examen:</p>
-            <div className="bg-blue-50 border border-blue-100 text-blue-800 font-bold p-4 rounded-xl text-center text-lg mb-8">
-              📄 {modalConfirmarInicio.registro.nombre_examen || modalConfirmarInicio.registro.nombre_documento}
-            </div>
-            <p className="text-center text-gray-500 mb-8 text-sm bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              ⚠️ Asegúrate de tener una conexión estable y tiempo suficiente. Una vez iniciado, el intento se registrará y no podrás pausarlo.
-            </p>
-            <div className="flex gap-4">
-              <button onClick={() => setModalConfirmarInicio({ abierto: false, registro: null })} className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">
-                Cancelar
-              </button>
-              <button onClick={confirmarInicioExamen} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-lg shadow-blue-500/30 border-none outline-none">
-                Sí, Comenzar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {modalAdvertenciaSalida && (
-        <div className="fixed inset-0 z-[110] bg-gray-900/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-20 h-20 mx-auto bg-red-100 rounded-full mb-6">
-              <span className="material-symbols-outlined text-red-600 text-5xl">warning</span>
-            </div>
-            <h3 className="text-3xl font-extrabold text-gray-900 mb-3">¡Alto ahí!</h3>
-            <p className="text-gray-600 mb-8 leading-relaxed">
-              Si sales ahora, <strong className="text-red-700">tus respuestas no se guardarán</strong> y perderás tu progreso en este intento de evaluación. ¿Estás seguro de que quieres abandonar?
-            </p>
-            <div className="flex gap-4 flex-col">
-              <button onClick={() => setModalAdvertenciaSalida(false)} className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-2xl cursor-pointer transition-colors border-none outline-none text-lg">
-                No, Volver al Examen
-              </button>
-              <button onClick={salirDelExamen} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl cursor-pointer transition-colors shadow-md border-none outline-none text-lg">
-                Sí, Salir y Perder Progreso
-              </button>
-            </div>
-          </div>
+      <Dialogo
+        abierto={modalConfirmarInicio.abierto && !!modalConfirmarInicio.registro}
+        icono="play_circle"
+        color="blue"
+        variante="destacado"
+        ancho="lg"
+        titulo="¿Comenzar Evaluación?"
+        textoConfirmar="Sí, Comenzar"
+        onConfirmar={confirmarInicioExamen}
+        onCancelar={() => setModalConfirmarInicio({ abierto: false, registro: null })}
+      >
+        <p className="text-gray-600 text-base mb-3">Has seleccionado el examen:</p>
+        <div className="bg-blue-50 border border-blue-100 text-blue-800 font-bold p-4 rounded-xl text-lg mb-8">
+          📄 {modalConfirmarInicio.registro?.nombre_examen || modalConfirmarInicio.registro?.nombre_documento}
         </div>
-      )}
+        <p className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+          ⚠️ Asegúrate de tener una conexión estable y tiempo suficiente. Una vez iniciado, el intento se registrará y no podrás pausarlo.
+        </p>
+      </Dialogo>
 
-      {modalConfirmarEntrega && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-10 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-6">
-              <span className="material-symbols-outlined text-green-600 text-3xl">send</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">¿Entregar Evaluación?</h3>
-            <p className="text-gray-500 mb-8 text-sm">
-              Una vez que entregues, el examen será calificado automáticamente y <strong className="text-gray-700">no podrás cambiar tus respuestas</strong>.
-            </p>
-            <div className="flex gap-4">
-              <button onClick={() => setModalConfirmarEntrega(false)} className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">
-                Cancelar
-              </button>
-              <button onClick={confirmarEntregaExamen} className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl cursor-pointer transition-colors shadow-lg shadow-green-500/30 border-none outline-none">
-                Sí, Entregar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalAdvertenciaSalida}
+        icono="warning"
+        color="red"
+        variante="alerta"
+        ancho="md"
+        overlayFuerte
+        titulo="¡Alto ahí!"
+        textoCancelar="No, Volver al Examen"
+        onCancelar={() => setModalAdvertenciaSalida(false)}
+        textoConfirmar="Sí, Salir y Perder Progreso"
+        onConfirmar={salirDelExamen}
+      >
+        Si sales ahora, <strong className="text-red-700">tus respuestas no se guardarán</strong> y perderás tu progreso en este intento de evaluación. ¿Estás seguro de que quieres abandonar?
+      </Dialogo>
 
-      {/* MODAL REINICIAR EXAMEN (Si aplica) */}
-      {modalConfirmarReinicio && (
-        <div className="fixed inset-0 z-[120] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center overflow-hidden transform transition-all border border-gray-100">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
-              <span className="material-symbols-outlined text-yellow-600 text-3xl">replay</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">¿Intentar de nuevo?</h3>
-            <p className="text-gray-500 mb-6 text-sm">Se borrarán tus resultados actuales y empezarás desde cero.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setModalConfirmarReinicio(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Cancelar</button>
-              <button onClick={confirmarReinicio} className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl cursor-pointer transition-colors border-none outline-none">Reintentar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialogo
+        abierto={modalConfirmarEntrega}
+        icono="send"
+        color="green"
+        variante="destacado"
+        ancho="md"
+        titulo="¿Entregar Evaluación?"
+        textoConfirmar="Sí, Entregar"
+        onConfirmar={confirmarEntregaExamen}
+        onCancelar={() => setModalConfirmarEntrega(false)}
+      >
+        Una vez que entregues, el examen será calificado automáticamente y <strong className="text-gray-700">no podrás cambiar tus respuestas</strong>.
+      </Dialogo>
+
+      <Dialogo
+        abierto={modalConfirmarReinicio}
+        icono="replay"
+        color="yellow"
+        titulo="¿Intentar de nuevo?"
+        textoConfirmar="Reintentar"
+        onConfirmar={confirmarReinicio}
+        onCancelar={() => setModalConfirmarReinicio(false)}
+      >
+        Se borrarán tus resultados actuales y empezarás desde cero.
+      </Dialogo>
 
       {/* ========================================== */}
       {/* NAVBAR SUPERIOR MODULAR                  */}
