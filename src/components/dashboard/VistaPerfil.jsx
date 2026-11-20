@@ -1,3 +1,4 @@
+import { API_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 
 function VistaPerfil({ usuario, setUsuario }) {
@@ -67,7 +68,7 @@ function VistaPerfil({ usuario, setUsuario }) {
     setMensaje({ texto: '', tipo: '' });
 
     try {
-      const response = await fetch(`https://backend-tesis-x187.onrender.com/api/usuarios/${usuario.id}/perfil`, {
+      const response = await fetch(`${API_URL}/api/usuarios/${usuario.id}/perfil`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

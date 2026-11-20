@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,7 +94,7 @@ function EvaluacionesIA() {
       if (!usuarioString) return;
       const usuario = JSON.parse(usuarioString);
       
-      const url = `https://backend-tesis-x187.onrender.com/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
+      const url = `${API_URL}/api/cuestionarios?usuario_id=${usuario.id}&rol=${usuario.rol}`;
       const respuesta = await fetch(url);
       if (!respuesta.ok) throw new Error("Fallo en servidor");
       const resultado = await respuesta.json();
@@ -129,7 +130,7 @@ function EvaluacionesIA() {
     formData.append("num_preguntas", numPreguntas);
 
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/generar-cuestionario", { method: "POST", body: formData });
+      const respuesta = await fetch(`${API_URL}/api/generar-cuestionario`, { method: "POST", body: formData });
       
       // --- ESTA ES LA MAGIA QUE LEE EL ERROR DEL BACKEND ---
       if (!respuesta.ok) {
@@ -169,7 +170,7 @@ function EvaluacionesIA() {
   const abrirModalPublicar = (id) => { setModalPublicar({ abierto: true, id: id }); };
   const confirmarPublicacion = async () => {
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${modalPublicar.id}/publicar`, { method: "PUT" });
+      await fetch(`${API_URL}/api/cuestionarios/${modalPublicar.id}/publicar`, { method: "PUT" });
       setModalPublicar({ abierto: false, id: null });
       cargarHistorial(); 
     } catch (err) { console.error(err); }
@@ -177,7 +178,7 @@ function EvaluacionesIA() {
   
   const despublicarCuestionario = async (id) => {
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/despublicar`, { method: "PUT" });
+      await fetch(`${API_URL}/api/cuestionarios/${id}/despublicar`, { method: "PUT" });
       cargarHistorial(); 
     } catch (err) { console.error(err); }
   };
@@ -190,7 +191,7 @@ function EvaluacionesIA() {
     const id = modalConfirmarEliminar.id;
     setModalConfirmarEliminar({ abierto: false, id: null });
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/api/cuestionarios/${id}`, { method: 'DELETE' });
       cargarHistorial(); 
       setModalInfo({ abierto: true, titulo: 'Examen Eliminado', mensaje: 'El examen fue borrado permanentemente de tu historial.', tipo: 'exito' });
     } catch (err) { 
@@ -243,7 +244,7 @@ function EvaluacionesIA() {
 
   const guardarEdicionEnBackend = async () => {
     try {
-      await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${examenActivo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json }) });
+      await fetch(`${API_URL}/api/cuestionarios/${examenActivo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preguntas_json: examenActivo.preguntas_json }) });
       setModalInfo({ abierto: true, titulo: '¡Cambios Guardados!', mensaje: 'El examen se ha actualizado correctamente.', tipo: 'exito' });
       setModoEdicion(false); 
       cargarHistorial(); 
@@ -254,7 +255,7 @@ function EvaluacionesIA() {
 
   const compartirEnComunidad = async (id) => {
     try {
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${id}/compartir`, { method: "PUT" });
+      const respuesta = await fetch(`${API_URL}/api/cuestionarios/${id}/compartir`, { method: "PUT" });
       if (respuesta.ok) {
         setModalInfo({ 
           abierto: true, 
@@ -277,7 +278,7 @@ function EvaluacionesIA() {
     const usuario = JSON.parse(usuarioString);
 
     try {
-      const respuesta = await fetch(`https://backend-tesis-x187.onrender.com/api/cuestionarios/${cuestionarioSeleccionado.id}/clonar`, {
+      const respuesta = await fetch(`${API_URL}/api/cuestionarios/${cuestionarioSeleccionado.id}/clonar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usuario_id: usuario.id })

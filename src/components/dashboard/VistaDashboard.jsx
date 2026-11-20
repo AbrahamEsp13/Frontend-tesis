@@ -1,3 +1,4 @@
+import { API_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 
 function VistaDashboard({ clonarCuestionario }) {
@@ -9,7 +10,7 @@ function VistaDashboard({ clonarCuestionario }) {
   const cargarCuestionariosComunidad = async () => {
     setCargandoComunidad(true);
     try {
-      const respuesta = await fetch("https://backend-tesis-x187.onrender.com/api/comunidad/cuestionarios");
+      const respuesta = await fetch(`${API_URL}/api/comunidad/cuestionarios`);
       if (respuesta.ok) {
         const resultado = await respuesta.json();
         setCuestionariosComunidad(resultado.data || []);

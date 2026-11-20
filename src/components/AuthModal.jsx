@@ -1,3 +1,4 @@
+import { API_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
         try {
             if (isLogin) {
                 // --- LÓGICA DE INICIAR SESIÓN ---
-                const response = await fetch("https://backend-tesis-x187.onrender.com/api/auth/login", {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ correo, password })
@@ -43,7 +44,7 @@ const AuthModal = ({ isOpen, onClose, initialMode }) => {
 
             } else {
                 // --- LÓGICA DE REGISTRO ---
-                const response = await fetch("https://backend-tesis-x187.onrender.com/api/auth/register", {
+                const response = await fetch(`${API_URL}/api/auth/register`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ nombre, correo, password, rol })
